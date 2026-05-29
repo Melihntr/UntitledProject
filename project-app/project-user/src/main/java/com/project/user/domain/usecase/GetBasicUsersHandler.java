@@ -3,20 +3,54 @@ package com.project.user.domain.usecase;
 import com.project.common.usecase.UseCaseHandler;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.port.UserPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-// Input almadığı için Input tipine 'Void' veriyoruz
+/**
+ * Core business use case handler responsible for retrieving a lightweight list of all users.
+ * This handler does not require any input parameters (hence the use of Void) as it 
+ * fetches a general, unfiltered dataset.
+ */
+@Service
 public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Void> {
+
+    private static final Logger logger = LoggerFactory.getLogger(GetBasicUsersHandler.class);
 
     private final UserPort userPort;
 
+    // Dependency Injection via constructor
     public GetBasicUsersHandler(UserPort userPort) {
         this.userPort = userPort;
     }
 
+    /**
+     * Executes the business logic to retrieve all users.
+     *
+     * @param input Void (null), as no filtering criteria are currently required.
+     * @return A list of internal user domain models.
+     */
     @Override
     public List<UserModel> handle(Void input) {
-        return userPort.getAllUsers();
+        
+        logger.info("Executing use case to retrieve all basic user profiles.");
+
+        // Delegate the data retrieval request to the infrastructure port
+        List<UserModel> users = userPort.getAllUsers();
+        
+        /*
+         * * Enterprise Note (Scalability):
+         * Returning an unbounded List<UserModel> is acceptable for administrative dropdowns 
+         * in a system with hundreds or thousands of users. However, in a large-scale system 
+         * with millions of users, this would cause severe memory issues (OutOfMemoryError). 
+         * In such cases, this Use Case should be refactored to accept a Pagination Input 
+         * and return a Spring Data Page<UserModel>.
+         */
+        
+        logger.debug("Successfully retrieved {} users from the infrastructure layer.", users.size());
+        
+        return users;
     }
 }

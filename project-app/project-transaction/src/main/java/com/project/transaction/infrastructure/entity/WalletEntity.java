@@ -1,26 +1,57 @@
 package com.project.transaction.infrastructure.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Persistence entity representing a user's financial wallet in the relational database.
+ * This class resides strictly within the infrastructure layer and is used solely for 
+ * Object-Relational Mapping (ORM) via Spring Data JPA / Hibernate.
+ */
 @Entity
 @Table(name = "wallets")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class WalletEntity {
 
+    /**
+     * The primary key of the wallet record.
+     * This ID is generated in the domain layer and passed down to persistence.
+     */
     @Id
     @Column(name = "id", updatable = false, nullable = false)
     private String id;
 
+    /**
+     * The unique identifier of the user who owns this wallet.
+     * Enforced as unique at the database level to ensure a strict 1-to-1 relationship 
+     * between a user and their wallet.
+     */
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
+    /**
+     * The current monetary balance of the wallet.
+     * * Enterprise Note: While Double is used here for simplicity, financial database 
+     * schemas generally map this column using columnDefinition = "DECIMAL(19,4)" 
+     * to strictly prevent floating-point precision loss.
+     */
     @Column(name = "balance", nullable = false)
     private Double balance;
 
-    // Optimistic Locking: Aynı anda iki işlem buraya yazmaya çalışırsa Spring hata fırlatır!
+    /**
+     * Optimistic Locking version control field.
+     * Automatically managed by Spring Data JPA / Hibernate. If two concurrent transactions 
+     * attempt to modify the same wallet simultaneously (e.g., two rapid transfer requests), 
+     * the database version check will fail for the second transaction, throwing an 
+     * ObjectOptimisticLockingFailureException. This is crucial for preventing lost updates 
+     * and double-spending.
+     */
     @Version
     @Column(name = "version")
     private Long version;
