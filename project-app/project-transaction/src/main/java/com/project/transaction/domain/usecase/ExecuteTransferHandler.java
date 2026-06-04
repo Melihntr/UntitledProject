@@ -73,26 +73,35 @@ public class ExecuteTransferHandler implements UseCaseHandler<TransactionRecordM
                 
         TransactionRecordModel savedRecord = transactionPort.saveTransactionRecord(record);
 
-        // Step 4: Inter-Service Communication (Synchronous REST Call)
-        // Send an alert to the independent Notification Microservice running on port 8081.
+// Step 4: Inter-Service Communication (REST Call)
         try {
             String notificationServiceUrl = "http://localhost:8081/api/v1/notifications/send";
-            
-            // Construct the payload for the Notification Service
+
+            // 1. O anki thread'de bulunan Trace ID'yi MDC'den alıyoruz
+            String traceId = org.slf4j.MDC.get("traceId");
+            if (traceId == null) {
+                traceId = UUID.randomUUID().toString(); // Güvenlik önlemi
+            }
+
+            // 2. HTTP Header oluştur ve Trace ID'yi ekle
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("X-Trace-Id", traceId);
+            headers.set("Content-Type", "application/json");
+
+            // 3. Payload oluştur
             Map<String, String> payload = Map.of(
                     "recipientId", savedRecord.getReceiverUserId(),
-                    "message", "You received a transfer of " + savedRecord.getAmount() + " TL from user: " + savedRecord.getSenderUserId()
+                    "message", "You received a transfer of " + savedRecord.getAmount() + " TL."
             );
 
-            // Execute the HTTP POST request
-            restTemplate.postForEntity(notificationServiceUrl, payload, String.class);
-            
-            logger.info("Notification successfully dispatched to the Notification Microservice.");
+            // 4. Header ve Body'yi birleştirip HttpEntity oluştur
+            org.springframework.http.HttpEntity<Map<String, String>> entity = new org.springframework.http.HttpEntity<>(payload, headers);
+
+            // 5. POST isteğini at (Artık Trace ID karşı servise gitti!)
+            restTemplate.postForEntity(notificationServiceUrl, entity, String.class);
+
+            logger.info("Notification successfully dispatched. Trace ID passed to microservice.");
         } catch (Exception e) {
-            // Enterprise Note: In a highly resilient distributed system, synchronous HTTP calls 
-            // within a core transaction can be risky. We catch the exception here so that a 
-            // notification failure does not roll back a successful financial transaction.
-            // Ideally, this would use the Transactional Outbox Pattern with an event broker (e.g., Kafka).
             logger.error("Failed to reach the Notification Service. Reason: {}", e.getMessage());
         }
 

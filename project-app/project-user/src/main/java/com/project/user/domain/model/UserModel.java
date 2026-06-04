@@ -2,6 +2,7 @@ package com.project.user.domain.model;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
  * It remains strictly decoupled from persistence entities (ORMs) and API DTOs.
  */
 @Getter
+@Setter
 @Builder
 public class UserModel {
 
