@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
  * It remains strictly decoupled from persistence entities (ORMs) and API DTOs.
  */
 @Getter
-@Setter
 @Builder
 public class UserModel {
 

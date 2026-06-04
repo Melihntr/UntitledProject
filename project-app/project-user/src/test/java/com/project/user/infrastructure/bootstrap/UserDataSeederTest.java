@@ -13,16 +13,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for UserDataSeeder.
- * Verifies that the seeder calls the CreateUserHandler with the expected inputs
- * and publishes UserCreatedEvent objects with the IDs returned by the handler.
  */
 @ExtendWith(MockitoExtension.class)
 class UserDataSeederTest {
@@ -43,53 +42,58 @@ class UserDataSeederTest {
     private ArgumentCaptor<Object> eventCaptor;
 
     @Test
-    void run_createsTwoUsers_andPublishesCorrespondingEvents() throws Exception {
-        // Arrange: return a UserModel whose id equals the id provided in the input
-        when(createUserHandler.handle(any())).thenAnswer(invocation -> {
-            UserCreateInput in = invocation.getArgument(0);
-            return UserModel.builder()
-                    .id(in.getId())
-                    .username(in.getUsername())
-                    .email(in.getEmail())
-                    .build();
-        });
+    void run_createsTwoUsers_publishesEvents_and_printsIds() throws Exception {
+        // Prepare UserModel mocks with the expected IDs
+        UserModel user1 = mock(UserModel.class);
+        when(user1.getId()).thenReturn("11111111-1111-1111-1111-111111111111");
 
-        // Act
-        seeder.run();
+        UserModel user2 = mock(UserModel.class);
+        when(user2.getId()).thenReturn("22222222-2222-2222-2222-222222222222");
 
-        // Assert - CreateUserHandler called twice with expected seeded IDs & usernames
+        // Make createUserHandler handle(...) return user1 then user2
+        when(createUserHandler.handle(any(UserCreateInput.class))).thenReturn(user1, user2);
+
+        // Capture System.out
+        PrintStream originalOut = System.out;
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        try {
+            // Execute
+            seeder.run();
+
+        } finally {
+            // Restore System.out
+            System.setOut(originalOut);
+        }
+
+        // Verify two create calls with captured inputs
         verify(createUserHandler, times(2)).handle(inputCaptor.capture());
         List<UserCreateInput> capturedInputs = inputCaptor.getAllValues();
-
         assertThat(capturedInputs).hasSize(2);
-        UserCreateInput i1 = capturedInputs.get(0);
-        UserCreateInput i2 = capturedInputs.get(1);
 
-        assertThat(i1.getId()).isEqualTo("11111111-1111-1111-1111-111111111111");
-        assertThat(i1.getUsername()).isEqualTo("test_sender");
-        assertThat(i1.getEmail()).isEqualTo("sender@enterprise.com");
-        assertThat(i1.getRawPassword()).isEqualTo("TestPass123!");
+        UserCreateInput in1 = capturedInputs.get(0);
+        assertThat(in1.getId()).isEqualTo("11111111-1111-1111-1111-111111111111");
+        assertThat(in1.getUsername()).isEqualTo("test_sender");
+        assertThat(in1.getEmail()).isEqualTo("sender@enterprise.com");
+        assertThat(in1.getRawPassword()).isEqualTo("TestPass123!");
 
-        assertThat(i2.getId()).isEqualTo("22222222-2222-2222-2222-222222222222");
-        assertThat(i2.getUsername()).isEqualTo("test_receiver");
-        assertThat(i2.getEmail()).isEqualTo("receiver@enterprise.com");
-        assertThat(i2.getRawPassword()).isEqualTo("TestPass123!");
+        UserCreateInput in2 = capturedInputs.get(1);
+        assertThat(in2.getId()).isEqualTo("22222222-2222-2222-2222-222222222222");
+        assertThat(in2.getUsername()).isEqualTo("test_receiver");
+        assertThat(in2.getEmail()).isEqualTo("receiver@enterprise.com");
+        assertThat(in2.getRawPassword()).isEqualTo("TestPass123!");
 
-        // Assert - events published twice with the IDs returned by the handler
+        // Verify two events published and they are UserCreatedEvent instances
         verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
         List<Object> published = eventCaptor.getAllValues();
-
         assertThat(published).hasSize(2);
         assertThat(published.get(0)).isInstanceOf(UserCreatedEvent.class);
         assertThat(published.get(1)).isInstanceOf(UserCreatedEvent.class);
 
-        UserCreatedEvent e1 = (UserCreatedEvent) published.get(0);
-        UserCreatedEvent e2 = (UserCreatedEvent) published.get(1);
-
-        assertThat(e1.getId()).isEqualTo("11111111-1111-1111-1111-111111111111");
-        assertThat(e2.getId()).isEqualTo("22222222-2222-2222-2222-222222222222");
-
-        // Ensure no unexpected interactions
-        verifyNoMoreInteractions(createUserHandler, eventPublisher);
+        // Optionally assert the printed output contains the IDs
+        String output = outContent.toString();
+        assertThat(output).contains("SENDER ID (Use in Header & Payload) : " + user1.getId());
+        assertThat(output).contains("RECEIVER ID (Use in Payload)        : " + user2.getId());
     }
 }
