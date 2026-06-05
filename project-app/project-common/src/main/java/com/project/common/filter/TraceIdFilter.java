@@ -27,7 +27,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
             traceId = UUID.randomUUID().toString();
         }
 
-        // 2. MDC'ye ekle (Bu sayede @Slf4j loglarının hepsine otomatik basılabilir)
+        // 2. (Bu sayede @Slf4j loglarının hepsine otomatik basılabilir)
         MDC.put(TRACE_ID_MDC_KEY, traceId);
 
         // 3. Response Header'ına da ekle ki Client (Frontend) bu ID'yi bilsin

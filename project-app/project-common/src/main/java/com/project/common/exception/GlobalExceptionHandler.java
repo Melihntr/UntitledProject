@@ -1,45 +1,80 @@
 package com.project.common.exception;
 
 import com.project.common.model.GenericResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.DataIntegrityViolationException;
 
-/**
- * Intercepts all exceptions globally across the application.
- * Formats these exceptions into a standardized API response structure,
- * ensuring a consistent error contract for external clients.
- */
+import java.util.stream.Collectors;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     /**
-     * Handles specific domain and business rule violations.
-     * For example: Insufficient balance, invalid state, or domain validation failures.
-     *
-     * @param ex The thrown BusinessException containing the specific error detail.
-     * @return A standardized API response mapped to HTTP 400 (Bad Request).
+     * Kendi yazdigimiz is kurallari hatalarini (BusinessException) yakalar. (Orn: Bakiye yetersiz)
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<GenericResponse<String>> handleBusinessException(BusinessException ex) {
-        // Note: If a specific error builder (e.g., GenericResponse.error()) is implemented 
-        // in your generic response structure, it is highly recommended to use it here.
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(GenericResponse.success("ERROR: " + ex.getMessage())); 
+    public ResponseEntity<GenericResponse<Void>> handleBusinessException(BusinessException ex) {
+        String traceId = MDC.get("traceId");
+        logger.warn("Business rule violation [TraceID: {}] - Code: {}, Message: {}", traceId, ex.getErrorCode(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(GenericResponse.error(ex.getMessage()));
     }
 
     /**
-     * Acts as a fallback mechanism for any uncaught or unexpected system exceptions.
-     * Ensures that the application does not crash or leak sensitive stack traces to the client.
-     *
-     * @param ex The generic Exception thrown during runtime.
-     * @return A standardized API response mapped to HTTP 500 (Internal Server Error).
+     * @Valid anotasyonuna takilan (Orn: Bos username, hatali email) validasyon hatalarini yakalar.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<GenericResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        logger.warn("Validation failed: {}", errorMessage);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(GenericResponse.error("Validation failed: " + errorMessage));
+    }
+
+    /**
+     * Ongorulemeyen (NullPointer, SQL hatalari vb.) tum kritik hatalari yakalar.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<GenericResponse<String>> handleGeneralException(Exception ex) {
-        // Handles unexpected system failures, database connection losses, or unhandled null pointers
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(GenericResponse.success("SYSTEM ERROR: " + ex.getMessage()));
+    public ResponseEntity<GenericResponse<Void>> handleGeneralException(Exception ex) {
+        String traceId = MDC.get("traceId");
+        // Kritik hatalari ERROR seviyesinde logluyoruz
+        logger.error("Unexpected system error occurred [TraceID: {}]", traceId, ex);
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(GenericResponse.error("An unexpected error occurred. Please contact support with Trace ID: " + traceId));
+    }
+    /**
+     * Veritabani "Unique" (Benzersizlik) kısıtlamalarına takılan işlemleri yakalar.
+     * Örneğin: Aynı email veya aynı kullanıcı adı ile ikinci kez kayıt olmaya çalışmak.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<GenericResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        String traceId = MDC.get("traceId");
+
+        // Hatayı konsola logluyoruz (Geliştirici için)
+        logger.warn("Data integrity violation [TraceID: {}] - Message: {}", traceId, ex.getMessage());
+
+        // Kullanıcıya tertemiz bir mesaj dönüyoruz (409 Conflict HTTP Kodu ile)
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(GenericResponse.error("Bu kayıt (örn: e-posta adresi) sistemde zaten mevcut. Lütfen farklı bilgilerle tekrar deneyin."));
     }
 }
