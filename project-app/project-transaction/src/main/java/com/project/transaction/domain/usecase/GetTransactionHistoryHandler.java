@@ -5,8 +5,8 @@ import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.port.TransactionPort;
 import lombok.Builder;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,16 +19,11 @@ import java.time.LocalDateTime;
  * querying the infrastructure layer for historical financial records.
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class GetTransactionHistoryHandler implements UseCaseHandler<Page<TransactionRecordModel>, GetTransactionHistoryHandler.HistoryFilterInput> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GetTransactionHistoryHandler.class);
-    
     private final TransactionPort transactionPort;
-
-    // Dependency Injection via constructor
-    public GetTransactionHistoryHandler(TransactionPort transactionPort) {
-        this.transactionPort = transactionPort;
-    }
 
     /**
      * Domain input model specifically designed to encapsulate the filtering criteria 
@@ -54,14 +49,14 @@ public class GetTransactionHistoryHandler implements UseCaseHandler<Page<Transac
     @Override
     public Page<TransactionRecordModel> handle(HistoryFilterInput input) {
         
-        logger.info("Fetching transaction history for user ID: {} from {} to {}", 
+        log.info("Fetching transaction history for user ID: {} from {} to {}",
                 input.getUserId(), input.getStartDate(), input.getEndDate());
 
         // Domain Validation: The start date cannot be in the future relative to the end date.
         // Future Extension Point: Additional business rules can be injected here, such as 
         // restricting the maximum date range (e.g., max 30 days per query) to prevent database overload.
         if (input.getStartDate().isAfter(input.getEndDate())) {
-            logger.warn("Invalid date range provided by user {}: StartDate={}, EndDate={}", 
+            log.warn("Invalid date range provided by user {}: StartDate={}, EndDate={}",
                     input.getUserId(), input.getStartDate(), input.getEndDate());
             // Note: In a production setup, throwing your custom BusinessException is highly recommended here.
             throw new IllegalArgumentException("Business Rule Violation: Start date cannot be after the end date.");

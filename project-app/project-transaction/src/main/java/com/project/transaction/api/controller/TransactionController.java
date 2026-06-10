@@ -4,12 +4,14 @@ import com.project.common.model.GenericResponse;
 import com.project.transaction.api.dto.TransferRequest;
 import com.project.transaction.api.dto.TransferResponse;
 import com.project.transaction.api.mapper.TransactionApiMapper;
+import com.project.transaction.api.security.TransactionAccessValidator;
 import com.project.transaction.domain.model.TransactionInput;
 import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.usecase.CheckSuspiciousTransfersHandler;
 import com.project.transaction.domain.usecase.ExecuteTransferHandler;
 import com.project.transaction.domain.usecase.GetTransactionHistoryHandler;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -24,23 +26,14 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/transactions")
+@RequiredArgsConstructor
 public class TransactionController {
 
     private final ExecuteTransferHandler executeTransferHandler;
     private final GetTransactionHistoryHandler getTransactionHistoryHandler;
     private final CheckSuspiciousTransfersHandler suspiciousTransfersHandler;
     private final TransactionApiMapper transactionApiMapper;
-
-    // Dependency Injection via constructor
-    public TransactionController(ExecuteTransferHandler executeTransferHandler,
-                                 GetTransactionHistoryHandler getTransactionHistoryHandler,
-                                 CheckSuspiciousTransfersHandler suspiciousTransfersHandler,
-                                 TransactionApiMapper transactionApiMapper) {
-        this.executeTransferHandler = executeTransferHandler;
-        this.getTransactionHistoryHandler = getTransactionHistoryHandler;
-        this.suspiciousTransfersHandler = suspiciousTransfersHandler;
-        this.transactionApiMapper = transactionApiMapper;
-    }
+    private final TransactionAccessValidator accessValidator;
 
     /**
      * Initiates a money transfer between two users.
@@ -55,10 +48,7 @@ public class TransactionController {
             @RequestHeader("X-User-Id") String loggedInUserId,
             @Valid @RequestBody TransferRequest request) {
 
-        // SECURITY CHECK: Ensure the authenticated user is not trying to spend someone else's money.
-        if (!loggedInUserId.equals(request.getSenderUserId())) {
-            throw new IllegalArgumentException("Security Violation: You can only transfer money from your own wallet.");
-        }
+        accessValidator.validateSender(loggedInUserId, request.getSenderUserId());
 
         TransactionInput input = transactionApiMapper.toInput(request);
         TransactionRecordModel result = executeTransferHandler.handle(input);
@@ -86,11 +76,7 @@ public class TransactionController {
             @RequestParam String endDate,
             Pageable pageable) { 
         
-        // SECURITY CHECK: IDOR Prevention
-        // Ensure the authenticated user is not trying to access someone else's financial records.
-        if (!loggedInUserId.equals(userId)) {
-            throw new IllegalArgumentException("Security Violation: You are not authorized to view this transaction history.");
-        }
+        accessValidator.validateHistoryOwner(loggedInUserId, userId);
         
         GetTransactionHistoryHandler.HistoryFilterInput input = GetTransactionHistoryHandler.HistoryFilterInput.builder()
                 .userId(userId)
@@ -118,11 +104,7 @@ public class TransactionController {
             @RequestHeader("X-User-Id") String adminUserId,
             @RequestHeader(value = "X-Role", defaultValue = "USER") String role) {
 
-        // SECURITY CHECK: Role-Based Access Control (RBAC)
-        // Fraud detection logic must be restricted to authorized risk management actors.
-        if (!"ADMIN".equalsIgnoreCase(role)) {
-            throw new SecurityException("Access Denied: Only administrators can access system-wide fraud reports.");
-        }
+        accessValidator.validateAdminRole(role);
 
         List<Object[]> suspiciousRecords = suspiciousTransfersHandler.handle();
         return ResponseEntity.ok(GenericResponse.success(suspiciousRecords));

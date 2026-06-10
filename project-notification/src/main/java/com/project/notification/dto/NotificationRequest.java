@@ -1,24 +1,22 @@
 package com.project.notification.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.project.notification.entity.NotificationType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
-/**
- * Data Transfer Object representing the payload for incoming notification requests.
- * This object is used to deserialize the JSON payload received from the Core Application 
- * during inter-service communication via the REST API.
- */
-@Getter
-@Setter
-public class NotificationRequest {
+import java.math.BigDecimal;
 
-    /**
-     * The unique identifier of the user who is intended to receive the notification.
-     */
-    private String recipientId;
-
-    /**
-     * The textual content of the notification to be delivered and stored.
-     */
-    private String message;
+public record NotificationRequest(
+        @NotBlank(message = "Event ID cannot be blank") String eventId,
+        @NotNull(message = "Notification type is required") NotificationType type,
+        @NotBlank(message = "Source service cannot be blank") String sourceService,
+        @NotBlank(message = "Recipient ID cannot be blank") String recipientId,
+        @NotBlank(message = "Title cannot be blank") @Size(max = 255, message = "Title cannot exceed 255 characters") String title,
+        @NotBlank(message = "Message cannot be blank") @Size(max = 1000, message = "Message cannot exceed 1000 characters") String message,
+        @NotBlank(message = "Reference ID cannot be blank") String referenceId,
+        @NotNull(message = "Amount is required") @Positive(message = "Amount must be positive") BigDecimal amount,
+        @NotBlank(message = "Currency cannot be blank") @Size(min = 3, max = 3, message = "Currency must be a 3-letter code") String currency
+) {
 }

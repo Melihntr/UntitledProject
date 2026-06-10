@@ -9,6 +9,7 @@ import com.project.user.domain.model.UserWalletSummaryModel;
 import com.project.user.domain.usecase.GetActiveTransferUsersHandler;
 import com.project.user.domain.usecase.GetOrphanWalletsHandler;
 import com.project.user.domain.usecase.GetUserWalletSummaryHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,22 +20,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/reports")
+@RequiredArgsConstructor
 public class AdminReportController {
 
     private final GetUserWalletSummaryHandler userWalletSummaryHandler;
     private final GetActiveTransferUsersHandler activeTransferUsersHandler;
     private final GetOrphanWalletsHandler orphanWalletsHandler;
     private final AdminReportApiMapper mapper;
-
-    public AdminReportController(GetUserWalletSummaryHandler userWalletSummaryHandler,
-                                 GetActiveTransferUsersHandler activeTransferUsersHandler,
-                                 GetOrphanWalletsHandler orphanWalletsHandler,
-                                 AdminReportApiMapper mapper) {
-        this.userWalletSummaryHandler = userWalletSummaryHandler;
-        this.activeTransferUsersHandler = activeTransferUsersHandler;
-        this.orphanWalletsHandler = orphanWalletsHandler;
-        this.mapper = mapper;
-    }
 
     @GetMapping("/user-wallet-summary")
     public ResponseEntity<GenericResponse<List<UserWalletSummaryResponse>>> getUserWalletSummary() {

@@ -3,8 +3,8 @@ package com.project.user.domain.usecase;
 import com.project.common.usecase.UseCaseHandler;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.port.UserPort;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,16 +15,11 @@ import java.util.List;
  * fetches a general, unfiltered dataset.
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Void> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GetBasicUsersHandler.class);
-
     private final UserPort userPort;
-
-    // Dependency Injection via constructor
-    public GetBasicUsersHandler(UserPort userPort) {
-        this.userPort = userPort;
-    }
 
     /**
      * Executes the business logic to retrieve all users.
@@ -35,7 +30,7 @@ public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Voi
     @Override
     public List<UserModel> handle(Void input) {
         
-        logger.info("Executing use case to retrieve all basic user profiles.");
+        log.info("Executing use case to retrieve all basic user profiles.");
 
         // Delegate the data retrieval request to the infrastructure port
         List<UserModel> users = userPort.getAllUsers();
@@ -49,7 +44,7 @@ public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Voi
          * and return a Spring Data Page<UserModel>.
          */
         
-        logger.debug("Successfully retrieved {} users from the infrastructure layer.", users.size());
+        log.debug("Successfully retrieved {} users from the infrastructure layer.", users.size());
         
         return users;
     }

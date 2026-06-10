@@ -2,8 +2,6 @@ package com.project.notification;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * The main entry point for the independent Notification Microservice.
@@ -20,17 +18,5 @@ public class NotificationApplication {
      */
     public static void main(String[] args) {
         SpringApplication.run(NotificationApplication.class, args);
-    }
-
-    /**
-     * Registers a RestTemplate as a Spring Bean.
-     * This allows the Notification Microservice to make synchronous HTTP requests
-     * to external APIs (e.g., third-party SMS or Email providers) or other internal microservices if needed.
-     *
-     * @return A new instance of RestTemplate.
-     */
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
     }
 }

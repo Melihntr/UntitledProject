@@ -1,16 +1,15 @@
 package com.project.notification.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Represents a persistence entity for a notification record within the independent Notification Microservice.
- * This entity is mapped to the "notifications" table in the microservice's dedicated database,
- * ensuring strict data isolation from the Core Application in alignment with microservice patterns.
- */
 @Entity
 @Table(name = "notifications")
 @Getter
@@ -19,31 +18,54 @@ import java.util.UUID;
 @AllArgsConstructor
 public class NotificationEntity {
 
-    /**
-     * The unique identifier for the notification record.
-     * Automatically generated as a UUID string upon instantiation.
-     */
     @Id
     private String id = UUID.randomUUID().toString();
 
-    /**
-     * The actual text content of the notification to be delivered to the user.
-     * This field is mandatory and cannot be null.
-     */
-    @Column(nullable = false)
-    private String message;
+    @Column(name = "event_id", nullable = false, unique = true, updatable = false)
+    private String eventId;
 
-    /**
-     * The unique identifier of the user (recipient) who will receive this notification.
-     * This links the isolated notification record to a specific user in the Core system.
-     */
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false)
+    private NotificationType type;
+
+    @Column(name = "source_service", nullable = false, updatable = false)
+    private String sourceService;
+
+    @Column(name = "recipient_id", nullable = false, updatable = false)
     private String recipientId;
 
-    /**
-     * The exact timestamp when this notification was created and recorded in the system.
-     * Defaults to the current system time upon instantiation.
-     */
+    @Column(nullable = false, updatable = false)
+    private String title;
+
+    @Column(nullable = false, length = 1000, updatable = false)
+    private String message;
+
+    @Column(name = "reference_id", nullable = false, updatable = false)
+    private String referenceId;
+
+    @Column(nullable = false, precision = 19, scale = 4, updatable = false)
+    private BigDecimal amount;
+
+    @Column(nullable = false, length = 3, updatable = false)
+    private String currency;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private NotificationStatus status = NotificationStatus.RECORDED;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    void assignDefaultsIfMissing() {
+        if (id == null || id.isBlank()) {
+            id = UUID.randomUUID().toString();
+        }
+        if (status == null) {
+            status = NotificationStatus.RECORDED;
+        }
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

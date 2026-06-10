@@ -4,6 +4,8 @@ import com.project.notification.entity.NotificationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * Spring Data JPA repository for managing NotificationEntity persistence.
  * This interface abstracts the database interactions for the Notification Microservice,
@@ -12,4 +14,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface NotificationRepository extends JpaRepository<NotificationEntity, String> {
+
+    Optional<NotificationEntity> findByEventId(String eventId);
 }

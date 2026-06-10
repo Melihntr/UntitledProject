@@ -5,6 +5,7 @@ import com.project.user.domain.model.OrphanWalletModel;
 import com.project.user.domain.model.UserWalletSummaryModel;
 import com.project.user.domain.port.ReportPort;
 import com.project.user.infrastructure.repository.AdminReportRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,13 +16,10 @@ import java.util.stream.Collectors;
  * Spring Boot'un "Bean could not be found" hatasini cozen ana bilesendir.
  */
 @Component
+@RequiredArgsConstructor
 public class ReportPersistenceAdapter implements ReportPort {
 
     private final AdminReportRepository reportRepository;
-
-    public ReportPersistenceAdapter(AdminReportRepository reportRepository) {
-        this.reportRepository = reportRepository;
-    }
 
     @Override
     public List<UserWalletSummaryModel> getUserWalletSummaries() {

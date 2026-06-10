@@ -1,6 +1,7 @@
 package com.project.transaction.domain.usecase;
 
 import com.project.transaction.domain.port.TransactionPort;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,14 +15,10 @@ import java.util.List;
  * @Configuration class in the infrastructure layer to keep the core domain 100% framework-agnostic.
  */
 @Service
+@RequiredArgsConstructor
 public class CheckSuspiciousTransfersHandler {
 
     private final TransactionPort transactionPort;
-
-    // Dependency Injection via constructor
-    public CheckSuspiciousTransfersHandler(TransactionPort transactionPort) {
-        this.transactionPort = transactionPort;
-    }
 
     /**
      * Executes the business logic to fetch suspicious transaction records.

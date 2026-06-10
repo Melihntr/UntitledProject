@@ -27,6 +27,7 @@ public interface UserApiMapper {
      * @param request The data transfer object received from the client.
      * @return The internal domain input model ready for business logic processing.
      */
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "rawPassword", source = "password")
     UserCreateInput toInput(CreateUserRequest request);
 

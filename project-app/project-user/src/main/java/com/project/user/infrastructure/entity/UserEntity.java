@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Database Entity representing the "users" table.
@@ -18,7 +19,7 @@ public class UserEntity {
 
     @Id
     @Column(name = "id", updatable = false, nullable = false)
-    private String id;
+    private String id = UUID.randomUUID().toString();
 
     @Column(name = "username", nullable = false, unique = true)
     private String username;
@@ -38,4 +39,11 @@ public class UserEntity {
     @Version
     @Column(name = "version")
     private Long version;
+
+    @PrePersist
+    void assignIdIfMissing() {
+        if (id == null || id.isBlank()) {
+            id = UUID.randomUUID().toString();
+        }
+    }
 }

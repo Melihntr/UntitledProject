@@ -5,8 +5,8 @@ import com.project.user.domain.port.UserPort;
 import com.project.user.infrastructure.entity.UserEntity;
 import com.project.user.infrastructure.mapper.UserInfrastructureMapper;
 import com.project.user.infrastructure.repository.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,19 +19,12 @@ import java.util.stream.Collectors;
  * underlying ORM (Spring Data JPA) concerns.
  */
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class UserPersistenceAdapter implements UserPort {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserPersistenceAdapter.class);
 
     private final UserRepository userRepository;
     private final UserInfrastructureMapper userInfrastructureMapper;
-
-    // Dependency Injection via constructor
-    public UserPersistenceAdapter(UserRepository userRepository, 
-                                  UserInfrastructureMapper userInfrastructureMapper) {
-        this.userRepository = userRepository;
-        this.userInfrastructureMapper = userInfrastructureMapper;
-    }
 
     /**
      * Persists the user domain model to the relational database.
@@ -42,7 +35,7 @@ public class UserPersistenceAdapter implements UserPort {
      */
     @Override
     public UserModel save(UserModel userModel) {
-        logger.debug("Persisting user domain model to the database: {}", userModel.getId());
+        log.debug("Persisting user domain model to the database: {}", userModel.getId());
 
         // 1. Convert Domain Model to Database Entity
         UserEntity entity = userInfrastructureMapper.toEntity(userModel);
@@ -53,7 +46,7 @@ public class UserPersistenceAdapter implements UserPort {
         // 3. Convert saved Entity back to Domain Model and return
         UserModel savedModel = userInfrastructureMapper.toModel(savedEntity);
         
-        logger.info("Successfully persisted user with ID: {}", savedModel.getId());
+        log.info("Successfully persisted user with ID: {}", savedModel.getId());
         return savedModel;
     }
 
@@ -65,13 +58,13 @@ public class UserPersistenceAdapter implements UserPort {
      */
     @Override
     public List<UserModel> getAllUsers() {
-        logger.debug("Retrieving all user records from the repository.");
+        log.debug("Retrieving all user records from the repository.");
         
         List<UserModel> users = userRepository.findAll().stream()
                 .map(userInfrastructureMapper::toModel)
                 .collect(Collectors.toList());
 
-        logger.info("Retrieved {} users from the database.", users.size());
+        log.info("Retrieved {} users from the database.", users.size());
         return users;
     }
 }

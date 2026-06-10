@@ -1,20 +1,16 @@
 package com.project.transaction.domain.usecase;
 
 import com.project.transaction.domain.model.TransactionInput;
+import com.project.transaction.domain.model.NotificationResult;
+import com.project.transaction.domain.exception.NotificationDeliveryException;
 import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.model.WalletModel;
+import com.project.transaction.domain.port.NotificationPort;
 import com.project.transaction.domain.port.TransactionPort;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-import org.slf4j.MDC;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,7 +18,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for ExecuteTransferHandler.
- * Mocks the TransactionPort and RestTemplate to verify the happy path, error handling, and business rule enforcement.
+ * Mocks the outbound ports to verify the happy path, error handling, and business rule enforcement.
  */
 @ExtendWith(MockitoExtension.class)
 class ExecuteTransferHandlerTest {
@@ -31,7 +27,7 @@ class ExecuteTransferHandlerTest {
     private TransactionPort transactionPort;
 
     @Mock
-    private RestTemplate restTemplate;
+    private NotificationPort notificationPort;
 
     @InjectMocks
     private ExecuteTransferHandler handler;
@@ -39,19 +35,9 @@ class ExecuteTransferHandlerTest {
     @Captor
     private ArgumentCaptor<TransactionRecordModel> recordCaptor;
 
-    @Captor
-    private ArgumentCaptor<org.springframework.http.HttpEntity> httpEntityCaptor;
-
-    @AfterEach
-    void tearDown() {
-        MDC.clear();
-    }
-
     @Test
-    void handle_success_updatesWallets_savesRecord_and_sendsNotification_withProvidedTraceId() throws Exception {
+    void handle_success_updatesWallets_savesRecord_and_sendsNotification() {
         // Arrange
-        MDC.put("traceId", "trace-abc-123");
-
         WalletModel sender = WalletModel.builder()
                 .id("w-s")
                 .userId("sender-1")
@@ -69,9 +55,9 @@ class ExecuteTransferHandlerTest {
         when(transactionPort.getWalletByUserId("sender-1")).thenReturn(sender);
         when(transactionPort.getWalletByUserId("receiver-1")).thenReturn(receiver);
         when(transactionPort.updateWallet(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(transactionPort.saveTransactionRecord(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                .thenReturn(ResponseEntity.ok("notified"));
+        when(transactionPort.saveTransactionRecord(any())).thenAnswer(inv -> savedRecord("tx-1", inv.getArgument(0)));
+        when(notificationPort.sendTransferReceivedNotification("tx-1", "receiver-1", 25.0))
+                .thenReturn(new NotificationResult("notification-1", "tx-1", "RECORDED", false));
 
         TransactionInput input = TransactionInput.builder()
                 .senderUserId("sender-1")
@@ -101,22 +87,15 @@ class ExecuteTransferHandlerTest {
         verify(transactionPort, times(1)).saveTransactionRecord(recordCaptor.capture());
 
         TransactionRecordModel passedToSave = recordCaptor.getValue();
+        assertThat(passedToSave.getId()).isNull();
         assertThat(passedToSave.getAmount()).isEqualTo(25.0);
         assertThat(passedToSave.getStatus()).isEqualTo("COMPLETED");
 
-        // Verify notification call and that trace id from MDC was forwarded
-        verify(restTemplate, times(1)).postForEntity(anyString(), httpEntityCaptor.capture(), eq(String.class));
-        org.springframework.http.HttpEntity<Map<String, String>> capturedEntity = httpEntityCaptor.getValue();
-        assertThat(capturedEntity).isNotNull();
-        assertThat(capturedEntity.getHeaders().getFirst("X-Trace-Id")).isEqualTo("trace-abc-123");
-        assertThat(capturedEntity.getHeaders().getFirst("Content-Type")).isEqualTo("application/json");
-        Map<String, String> payload = capturedEntity.getBody();
-        assertThat(payload).containsEntry("recipientId", "receiver-1");
-        assertThat(payload.get("message")).contains("25.0");
+        verify(notificationPort).sendTransferReceivedNotification("tx-1", "receiver-1", 25.0);
     }
 
     @Test
-    void handle_whenNotificationServiceFails_shouldNotPropagateException_andStillReturnSavedRecord() throws Exception {
+    void handle_whenNotificationServiceFails_shouldNotPropagateException_andStillReturnSavedRecord() {
         // Arrange
         WalletModel sender = WalletModel.builder()
                 .id("w-s")
@@ -135,11 +114,11 @@ class ExecuteTransferHandlerTest {
         when(transactionPort.getWalletByUserId("sender-2")).thenReturn(sender);
         when(transactionPort.getWalletByUserId("receiver-2")).thenReturn(receiver);
         when(transactionPort.updateWallet(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(transactionPort.saveTransactionRecord(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(transactionPort.saveTransactionRecord(any())).thenAnswer(inv -> savedRecord("tx-2", inv.getArgument(0)));
 
         // Simulate notification failure
-        when(restTemplate.postForEntity(anyString(), any(), eq(String.class)))
-                .thenThrow(new RuntimeException("notification down"));
+        doThrow(new RuntimeException("notification down"))
+                .when(notificationPort).sendTransferReceivedNotification("tx-2", "receiver-2", 20.0);
 
         TransactionInput input = TransactionInput.builder()
                 .senderUserId("sender-2")
@@ -154,7 +133,26 @@ class ExecuteTransferHandlerTest {
         assertThat(result).isNotNull();
         assertThat(result.getAmount()).isEqualTo(20.0);
         verify(transactionPort).saveTransactionRecord(any());
-        verify(restTemplate).postForEntity(anyString(), any(), eq(String.class));
+        verify(notificationPort).sendTransferReceivedNotification("tx-2", "receiver-2", 20.0);
+    }
+
+    @Test
+    void handle_whenNotificationServiceRejectsRequest_shouldNotPropagateTypedException() {
+        WalletModel sender = WalletModel.builder().id("w-s").userId("sender-3").balance(60.0).version(1L).build();
+        WalletModel receiver = WalletModel.builder().id("w-r").userId("receiver-3").balance(10.0).version(1L).build();
+        when(transactionPort.getWalletByUserId("sender-3")).thenReturn(sender);
+        when(transactionPort.getWalletByUserId("receiver-3")).thenReturn(receiver);
+        when(transactionPort.updateWallet(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(transactionPort.saveTransactionRecord(any())).thenAnswer(inv -> savedRecord("tx-3", inv.getArgument(0)));
+        when(notificationPort.sendTransferReceivedNotification("tx-3", "receiver-3", 20.0))
+                .thenThrow(new NotificationDeliveryException(
+                        "Invalid request", 400, "NOTIFICATION_REQUEST_INVALID", "trace-3", null));
+
+        TransactionRecordModel result = handler.handle(TransactionInput.builder()
+                .senderUserId("sender-3").receiverUserId("receiver-3").amount(20.0).build());
+
+        assertThat(result.getId()).isEqualTo("tx-3");
+        verify(notificationPort).sendTransferReceivedNotification("tx-3", "receiver-3", 20.0);
     }
 
     @Test
@@ -184,6 +182,17 @@ class ExecuteTransferHandlerTest {
         verify(transactionPort, times(1)).getWalletByUserId("poor-sender");
         verify(transactionPort, never()).updateWallet(any());
         verify(transactionPort, never()).saveTransactionRecord(any());
-        verifyNoInteractions(restTemplate);
+        verifyNoInteractions(notificationPort);
+    }
+
+    private TransactionRecordModel savedRecord(String id, TransactionRecordModel record) {
+        return TransactionRecordModel.builder()
+                .id(id)
+                .senderUserId(record.getSenderUserId())
+                .receiverUserId(record.getReceiverUserId())
+                .amount(record.getAmount())
+                .transactionDate(record.getTransactionDate())
+                .status(record.getStatus())
+                .build();
     }
 }

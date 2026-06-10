@@ -1,5 +1,7 @@
 package com.project.common.filter;
 
+import com.project.common.tracing.TraceIdProvider;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -9,13 +11,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class TraceIdFilter extends OncePerRequestFilter {
 
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
     private static final String TRACE_ID_MDC_KEY = "traceId";
+    private final TraceIdProvider traceIdProvider;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -24,7 +27,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
         // 1. İsteğin Header'ından Trace ID'yi al. Yoksa yeni bir UUID üret.
         String traceId = request.getHeader(TRACE_ID_HEADER);
         if (traceId == null || traceId.isEmpty()) {
-            traceId = UUID.randomUUID().toString();
+            traceId = traceIdProvider.currentTraceIdOrNew();
         }
 
         // 2. (Bu sayede @Slf4j loglarının hepsine otomatik basılabilir)

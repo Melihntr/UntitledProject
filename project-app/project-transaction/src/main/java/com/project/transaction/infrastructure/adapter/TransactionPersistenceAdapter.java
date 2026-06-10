@@ -8,6 +8,7 @@ import com.project.transaction.infrastructure.entity.WalletEntity;
 import com.project.transaction.infrastructure.mapper.TransactionInfrastructureMapper;
 import com.project.transaction.infrastructure.repository.TransactionRecordRepository;
 import com.project.transaction.infrastructure.repository.WalletRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -22,20 +23,12 @@ import java.util.List;
  * domain layer remains completely oblivious to database entities, ORM frameworks, and SQL queries.
  */
 @Component
+@RequiredArgsConstructor
 public class TransactionPersistenceAdapter implements TransactionPort {
 
     private final WalletRepository walletRepository;
     private final TransactionRecordRepository recordRepository;
     private final TransactionInfrastructureMapper mapper;
-
-    // Dependency Injection via constructor
-    public TransactionPersistenceAdapter(WalletRepository walletRepository, 
-                                         TransactionRecordRepository recordRepository, 
-                                         TransactionInfrastructureMapper mapper) {
-        this.walletRepository = walletRepository;
-        this.recordRepository = recordRepository;
-        this.mapper = mapper;
-    }
 
     /**
      * Retrieves the wallet associated with the given user ID.

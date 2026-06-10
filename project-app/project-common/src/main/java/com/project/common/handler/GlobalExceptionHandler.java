@@ -1,23 +1,22 @@
-package com.project.common.exception;
+package com.project.common.handler;
 
+import com.project.common.exception.BusinessException;
 import com.project.common.model.GenericResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Kendi yazdigimiz is kurallari hatalarini (BusinessException) yakalar. (Orn: Bakiye yetersiz)
@@ -25,7 +24,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<GenericResponse<Void>> handleBusinessException(BusinessException ex) {
         String traceId = MDC.get("traceId");
-        logger.warn("Business rule violation [TraceID: {}] - Code: {}, Message: {}", traceId, ex.getErrorCode(), ex.getMessage());
+        log.warn("Business rule violation [TraceID: {}] - Code: {}, Message: {}", traceId, ex.getErrorCode(), ex.getMessage());
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -41,7 +40,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        logger.warn("Validation failed: {}", errorMessage);
+        log.warn("Validation failed: {}", errorMessage);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -54,27 +53,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponse<Void>> handleGeneralException(Exception ex) {
         String traceId = MDC.get("traceId");
-        // Kritik hatalari ERROR seviyesinde logluyoruz
-        logger.error("Unexpected system error occurred [TraceID: {}]", traceId, ex);
+        log.error("Unexpected system error occurred [TraceID: {}]", traceId, ex);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(GenericResponse.error("An unexpected error occurred. Please contact support with Trace ID: " + traceId));
     }
+
     /**
-     * Veritabani "Unique" (Benzersizlik) kısıtlamalarına takılan işlemleri yakalar.
-     * Örneğin: Aynı email veya aynı kullanıcı adı ile ikinci kez kayıt olmaya çalışmak.
+     * Veritabani "Unique" (Benzersizlik) kisitlamalarina takilan islemleri yakalar.
+     * Ornegin: Ayni email veya ayni kullanici adi ile ikinci kez kayit olmaya calismak.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<GenericResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         String traceId = MDC.get("traceId");
 
-        // Hatayı konsola logluyoruz (Geliştirici için)
-        logger.warn("Data integrity violation [TraceID: {}] - Message: {}", traceId, ex.getMessage());
+        log.warn("Data integrity violation [TraceID: {}] - Message: {}", traceId, ex.getMessage());
 
-        // Kullanıcıya tertemiz bir mesaj dönüyoruz (409 Conflict HTTP Kodu ile)
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(GenericResponse.error("Bu kayıt (örn: e-posta adresi) sistemde zaten mevcut. Lütfen farklı bilgilerle tekrar deneyin."));
+                .body(GenericResponse.error("Bu kayit (orn: e-posta adresi) sistemde zaten mevcut. Lutfen farkli bilgilerle tekrar deneyin."));
     }
 }

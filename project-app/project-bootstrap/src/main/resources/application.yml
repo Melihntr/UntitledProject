@@ -29,3 +29,9 @@ spring:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+app:
+  notification:
+    base-url: http://localhost:8081
+    connect-timeout: 2s
+    read-timeout: 3s

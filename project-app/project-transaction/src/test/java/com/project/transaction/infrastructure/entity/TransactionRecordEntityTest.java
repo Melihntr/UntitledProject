@@ -49,4 +49,41 @@ class TransactionRecordEntityTest {
         assertThat(entity.getTransactionDate()).isEqualTo(then);
         assertThat(entity.getStatus()).isEqualTo("PENDING");
     }
+
+    @Test
+    void noArgsConstructor_generatesId() {
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+
+        assertThat(entity.getId()).isNotBlank();
+    }
+
+    @Test
+    void assignIdIfMissing_generatesIdWhenIdIsBlank() {
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+        entity.setId(" ");
+
+        entity.assignIdIfMissing();
+
+        assertThat(entity.getId()).isNotBlank();
+    }
+
+    @Test
+    void assignIdIfMissing_generatesIdWhenIdIsNull() {
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+        entity.setId(null);
+
+        entity.assignIdIfMissing();
+
+        assertThat(entity.getId()).isNotBlank();
+    }
+
+    @Test
+    void assignIdIfMissing_keepsExistingId() {
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+        entity.setId("transaction-1");
+
+        entity.assignIdIfMissing();
+
+        assertThat(entity.getId()).isEqualTo("transaction-1");
+    }
 }
