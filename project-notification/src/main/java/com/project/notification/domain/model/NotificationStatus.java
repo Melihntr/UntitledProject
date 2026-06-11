@@ -1,4 +1,4 @@
-package com.project.notification.entity;
+package com.project.notification.domain.model;
 
 public enum NotificationStatus {
     RECORDED

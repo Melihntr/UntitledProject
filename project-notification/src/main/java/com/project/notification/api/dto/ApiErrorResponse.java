@@ -1,4 +1,4 @@
-package com.project.notification.dto;
+package com.project.notification.api.dto;
 
 import java.time.LocalDateTime;
 import java.util.Map;

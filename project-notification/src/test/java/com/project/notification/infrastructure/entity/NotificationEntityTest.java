@@ -1,5 +1,7 @@
-package com.project.notification.entity;
+package com.project.notification.infrastructure.entity;
 
+import com.project.notification.domain.model.NotificationStatus;
+import com.project.notification.domain.model.NotificationType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

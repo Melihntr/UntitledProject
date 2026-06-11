@@ -1,10 +1,13 @@
-package com.project.notification.controller;
+package com.project.notification.api.controller;
 
-import com.project.notification.dto.NotificationRequest;
-import com.project.notification.dto.NotificationResponse;
-import com.project.notification.entity.NotificationStatus;
-import com.project.notification.entity.NotificationType;
-import com.project.notification.service.NotificationService;
+import com.project.notification.api.dto.NotificationRequest;
+import com.project.notification.api.dto.NotificationResponse;
+import com.project.notification.api.mapper.NotificationApiMapper;
+import com.project.notification.domain.model.NotificationResult;
+import com.project.notification.domain.model.NotificationStatus;
+import com.project.notification.domain.model.NotificationType;
+import com.project.notification.domain.model.RecordNotificationInput;
+import com.project.notification.domain.usecase.RecordNotificationHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,7 +26,10 @@ import static org.mockito.Mockito.when;
 class NotificationControllerTest {
 
     @Mock
-    private NotificationService notificationService;
+    private RecordNotificationHandler recordNotificationHandler;
+
+    @Mock
+    private NotificationApiMapper notificationApiMapper;
 
     @InjectMocks
     private NotificationController controller;
@@ -33,7 +39,12 @@ class NotificationControllerTest {
         NotificationRequest request = request();
         NotificationResponse serviceResponse =
                 new NotificationResponse("notification-1", "tx-1", NotificationStatus.RECORDED, false, LocalDateTime.now());
-        when(notificationService.recordNotification(request)).thenReturn(serviceResponse);
+        RecordNotificationInput input = input();
+        NotificationResult result =
+                new NotificationResult("notification-1", "tx-1", NotificationStatus.RECORDED, false, serviceResponse.createdAt());
+        when(notificationApiMapper.toInput(request)).thenReturn(input);
+        when(recordNotificationHandler.recordNotification(input)).thenReturn(result);
+        when(notificationApiMapper.toResponse(result)).thenReturn(serviceResponse);
 
         ResponseEntity<NotificationResponse> response = controller.createNotification(request);
 
@@ -46,7 +57,12 @@ class NotificationControllerTest {
         NotificationRequest request = request();
         NotificationResponse serviceResponse =
                 new NotificationResponse("notification-1", "tx-1", NotificationStatus.RECORDED, true, LocalDateTime.now());
-        when(notificationService.recordNotification(request)).thenReturn(serviceResponse);
+        RecordNotificationInput input = input();
+        NotificationResult result =
+                new NotificationResult("notification-1", "tx-1", NotificationStatus.RECORDED, true, serviceResponse.createdAt());
+        when(notificationApiMapper.toInput(request)).thenReturn(input);
+        when(recordNotificationHandler.recordNotification(input)).thenReturn(result);
+        when(notificationApiMapper.toResponse(result)).thenReturn(serviceResponse);
 
         ResponseEntity<NotificationResponse> response = controller.createNotification(request);
 
@@ -56,6 +72,12 @@ class NotificationControllerTest {
 
     private NotificationRequest request() {
         return new NotificationRequest(
+                "tx-1", NotificationType.TRANSFER_RECEIVED, "enterprise-app", "user-1",
+                "Transfer received", "You received 25 TRY.", "tx-1", BigDecimal.valueOf(25), "TRY");
+    }
+
+    private RecordNotificationInput input() {
+        return new RecordNotificationInput(
                 "tx-1", NotificationType.TRANSFER_RECEIVED, "enterprise-app", "user-1",
                 "Transfer received", "You received 25 TRY.", "tx-1", BigDecimal.valueOf(25), "TRY");
     }

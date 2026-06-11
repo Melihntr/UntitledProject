@@ -1,6 +1,6 @@
 package com.project.notification.handler;
 
-import com.project.notification.dto.ApiErrorResponse;
+import com.project.notification.api.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

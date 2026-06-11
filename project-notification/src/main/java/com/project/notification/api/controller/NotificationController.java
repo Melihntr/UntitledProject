@@ -1,8 +1,10 @@
-package com.project.notification.controller;
+package com.project.notification.api.controller;
 
-import com.project.notification.dto.NotificationRequest;
-import com.project.notification.dto.NotificationResponse;
-import com.project.notification.service.NotificationService;
+import com.project.notification.api.dto.NotificationRequest;
+import com.project.notification.api.dto.NotificationResponse;
+import com.project.notification.api.mapper.NotificationApiMapper;
+import com.project.notification.domain.model.NotificationResult;
+import com.project.notification.domain.usecase.RecordNotificationHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    private final RecordNotificationHandler recordNotificationHandler;
+    private final NotificationApiMapper notificationApiMapper;
 
     @PostMapping
     public ResponseEntity<NotificationResponse> createNotification(@Valid @RequestBody NotificationRequest request) {
-        NotificationResponse response = notificationService.recordNotification(request);
+        NotificationResult result = recordNotificationHandler.recordNotification(notificationApiMapper.toInput(request));
+        NotificationResponse response = notificationApiMapper.toResponse(result);
         HttpStatus status = response.duplicate() ? HttpStatus.OK : HttpStatus.CREATED;
         return ResponseEntity.status(status).body(response);
     }

@@ -1,6 +1,6 @@
-package com.project.notification.dto;
+package com.project.notification.api.dto;
 
-import com.project.notification.entity.NotificationStatus;
+import com.project.notification.domain.model.NotificationStatus;
 
 import java.time.LocalDateTime;
 

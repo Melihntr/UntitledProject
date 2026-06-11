@@ -1,6 +1,6 @@
-package com.project.notification.dto;
+package com.project.notification.api.dto;
 
-import com.project.notification.entity.NotificationType;
+import com.project.notification.domain.model.NotificationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

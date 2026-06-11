@@ -152,6 +152,28 @@ Bağımsız Notification App'tir:
 - Kendi merkezi exception handler'ına ve trace filtresine sahiptir
 - Enterprise App'ten bağımsız veri tabanı kullanır
 
+Notification App de Enterprise App ile aynı port-adapter sınırlarını izler:
+
+```text
+api/
+├── controller/    HTTP endpointleri
+├── dto/           Dış servis sözleşmeleri
+└── mapper/        API DTO <-> domain dönüşümleri
+domain/
+├── model/         Altyapıdan bağımsız bildirim modelleri
+├── port/          Persistence sözleşmesi
+└── usecase/       İdempotent bildirim kayıt akışı ve iş logları
+infrastructure/
+├── adapter/       Domain portunun JPA uygulaması
+├── entity/        Persistence entity'leri
+├── mapper/        Domain <-> entity dönüşümleri
+└── repository/    Spring Data repository'leri
+```
+
+`RecordNotificationHandler` yalnızca domain modelleri ve `NotificationPort` ile çalışır. Concurrent
+unique-key yarışının teknik çözümü `NotificationPersistenceAdapter` içinde tutulur; controller ve
+use case JPA entity veya repository detaylarını bilmez.
+
 ## Katmanlar ve Sorumluluklar
 
 ### API Katmanı

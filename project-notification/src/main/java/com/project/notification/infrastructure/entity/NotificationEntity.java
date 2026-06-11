@@ -1,5 +1,7 @@
-package com.project.notification.entity;
+package com.project.notification.infrastructure.entity;
 
+import com.project.notification.domain.model.NotificationStatus;
+import com.project.notification.domain.model.NotificationType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
