@@ -8,6 +8,7 @@ import com.project.user.api.mapper.UserApiMapper;
 import com.project.user.domain.model.UserCreateInput;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.usecase.CreateUserHandler;
+import com.project.user.domain.usecase.DeleteUserHandler;
 import com.project.user.domain.usecase.GetBasicUsersHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class UserControllerTest {
 
     @Mock
     private GetBasicUsersHandler getBasicUsersHandler;
+
+    @Mock
+    private DeleteUserHandler deleteUserHandler;
 
     @Mock
     private UserApiMapper userApiMapper;
@@ -75,5 +79,14 @@ class UserControllerTest {
         assertThat(result.getBody().getData()).isSameAs(responses);
         verify(getBasicUsersHandler).handle(null);
         verify(userApiMapper).toBasicResponseList(users);
+    }
+
+    @Test
+    void deleteUser_delegatesAndReturnsNoContent() {
+        ResponseEntity<Void> result = controller.deleteUser("u1");
+
+        assertThat(result.getStatusCode().value()).isEqualTo(204);
+        assertThat(result.getBody()).isNull();
+        verify(deleteUserHandler).handle("u1");
     }
 }

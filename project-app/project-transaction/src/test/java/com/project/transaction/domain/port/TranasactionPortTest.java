@@ -42,6 +42,11 @@ class TransactionPortTest {
         }
 
         @Override
+        public void deleteWalletByUserId(String userId) {
+            wallets.remove(userId);
+        }
+
+        @Override
         public TransactionRecordModel saveTransactionRecord(TransactionRecordModel recordModel) {
             // assign id if missing to simulate persistence
             TransactionRecordModel toSave = TransactionRecordModel.builder()
@@ -107,6 +112,20 @@ class TransactionPortTest {
         assertThatThrownBy(() -> inMemoryPort.getWalletByUserId("non-existent"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Wallet not found for user");
+    }
+
+    @Test
+    void deleteWalletByUserId_removesOnlyRequestedWallet() {
+        WalletModel aliceWallet = WalletModel.builder().id("w1").userId("alice").balance(10.0).build();
+        WalletModel bobWallet = WalletModel.builder().id("w2").userId("bob").balance(20.0).build();
+        inMemoryPort.updateWallet(aliceWallet);
+        inMemoryPort.updateWallet(bobWallet);
+
+        inMemoryPort.deleteWalletByUserId("alice");
+
+        assertThatThrownBy(() -> inMemoryPort.getWalletByUserId("alice"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(inMemoryPort.getWalletByUserId("bob")).isSameAs(bobWallet);
     }
 
     @Test

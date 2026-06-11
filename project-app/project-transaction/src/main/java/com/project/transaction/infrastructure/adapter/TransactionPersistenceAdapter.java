@@ -61,6 +61,11 @@ public class TransactionPersistenceAdapter implements TransactionPort {
         return mapper.toWalletModel(savedEntity);
     }
 
+    @Override
+    public void deleteWalletByUserId(String userId) {
+        walletRepository.deleteByUserId(userId);
+    }
+
     /**
      * Persists a newly created transaction record to the database history.
      *

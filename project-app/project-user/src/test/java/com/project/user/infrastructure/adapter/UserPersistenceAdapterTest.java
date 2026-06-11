@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,5 +60,13 @@ class UserPersistenceAdapterTest {
         assertThat(result).containsExactly(model);
         verify(userRepository).findAll();
         verify(userInfrastructureMapper).toModel(entity);
+    }
+
+    @Test
+    void deleteUserById_delegatesToUserRepositoryOnly() {
+        adapter.deleteUserById("u1");
+
+        verify(userRepository).deleteById("u1");
+        verifyNoInteractions(userInfrastructureMapper);
     }
 }

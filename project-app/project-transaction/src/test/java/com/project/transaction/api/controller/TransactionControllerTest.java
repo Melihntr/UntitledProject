@@ -8,6 +8,7 @@ import com.project.transaction.api.security.TransactionAccessValidator;
 import com.project.transaction.domain.model.TransactionInput;
 import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.usecase.CheckSuspiciousTransfersHandler;
+import com.project.transaction.domain.usecase.DeleteWalletHandler;
 import com.project.transaction.domain.usecase.ExecuteTransferHandler;
 import com.project.transaction.domain.usecase.GetTransactionHistoryHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,9 @@ class TransactionControllerTest {
     private CheckSuspiciousTransfersHandler suspiciousTransfersHandler;
 
     @Mock
+    private DeleteWalletHandler deleteWalletHandler;
+
+    @Mock
     private TransactionApiMapper transactionApiMapper;
 
     private TransactionController controller;
@@ -52,6 +56,7 @@ class TransactionControllerTest {
                 executeTransferHandler,
                 getTransactionHistoryHandler,
                 suspiciousTransfersHandler,
+                deleteWalletHandler,
                 transactionApiMapper,
                 new TransactionAccessValidator()
         );
@@ -205,5 +210,23 @@ class TransactionControllerTest {
         assertThat(body.getData()).isSameAs(suspicious);
 
         verify(suspiciousTransfersHandler).handle();
+    }
+
+    @Test
+    void deleteWallet_whenOwner_delegatesAndReturnsNoContent() {
+        ResponseEntity<Void> response = controller.deleteWallet("alice", "alice");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(204);
+        assertThat(response.getBody()).isNull();
+        verify(deleteWalletHandler).handle("alice");
+    }
+
+    @Test
+    void deleteWallet_whenRequesterIsNotOwner_rejectsRequest() {
+        assertThatThrownBy(() -> controller.deleteWallet("alice", "bob"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("own wallet");
+
+        verifyNoInteractions(deleteWalletHandler);
     }
 }

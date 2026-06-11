@@ -8,6 +8,7 @@ import com.project.transaction.api.security.TransactionAccessValidator;
 import com.project.transaction.domain.model.TransactionInput;
 import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.usecase.CheckSuspiciousTransfersHandler;
+import com.project.transaction.domain.usecase.DeleteWalletHandler;
 import com.project.transaction.domain.usecase.ExecuteTransferHandler;
 import com.project.transaction.domain.usecase.GetTransactionHistoryHandler;
 import jakarta.validation.Valid;
@@ -32,6 +33,7 @@ public class TransactionController {
     private final ExecuteTransferHandler executeTransferHandler;
     private final GetTransactionHistoryHandler getTransactionHistoryHandler;
     private final CheckSuspiciousTransfersHandler suspiciousTransfersHandler;
+    private final DeleteWalletHandler deleteWalletHandler;
     private final TransactionApiMapper transactionApiMapper;
     private final TransactionAccessValidator accessValidator;
 
@@ -108,5 +110,15 @@ public class TransactionController {
 
         List<Object[]> suspiciousRecords = suspiciousTransfersHandler.handle();
         return ResponseEntity.ok(GenericResponse.success(suspiciousRecords));
+    }
+
+    @DeleteMapping("/wallets/{userId}")
+    public ResponseEntity<Void> deleteWallet(
+            @RequestHeader("X-User-Id") String loggedInUserId,
+            @PathVariable String userId) {
+
+        accessValidator.validateWalletOwner(loggedInUserId, userId);
+        deleteWalletHandler.handle(userId);
+        return ResponseEntity.noContent().build();
     }
 }

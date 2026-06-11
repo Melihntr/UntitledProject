@@ -67,4 +67,11 @@ public class UserPersistenceAdapter implements UserPort {
         log.info("Retrieved {} users from the database.", users.size());
         return users;
     }
+
+    @Override
+    public void deleteUserById(String userId) {
+        log.debug("Deleting only the user record with ID: {}", userId);
+        userRepository.deleteById(userId);
+        log.info("Successfully deleted user record with ID: {}", userId);
+    }
 }

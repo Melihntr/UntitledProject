@@ -8,6 +8,7 @@ import com.project.user.api.mapper.UserApiMapper;
 import com.project.user.domain.model.UserCreateInput;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.usecase.CreateUserHandler;
+import com.project.user.domain.usecase.DeleteUserHandler;
 import com.project.user.domain.usecase.GetBasicUsersHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class UserController {
 
     private final CreateUserHandler createUserHandler;
     private final GetBasicUsersHandler getBasicUsersHandler;
+    private final DeleteUserHandler deleteUserHandler;
     private final UserApiMapper userApiMapper;
 
     /**
@@ -73,5 +75,12 @@ public class UserController {
         List<BasicUserResponse> responseList = userApiMapper.toBasicResponseList(users);
                 
         return ResponseEntity.ok(GenericResponse.success(responseList));
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
+        log.info("Received request to delete only the user record with ID: {}", userId);
+        deleteUserHandler.handle(userId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -10,7 +10,8 @@ import com.project.user.domain.model.UserModel;
 public interface UserPort {
     
     UserModel save(UserModel userModel);
-    
-    // Future methods like findById, existsByEmail, etc. can be added here
+
     java.util.List<UserModel> getAllUsers();
+
+    void deleteUserById(String userId);
 }

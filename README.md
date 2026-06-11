@@ -295,6 +295,8 @@ Varsayılan adres: `http://localhost:8080`
 | `POST` | `/api/v1/transactions/transfer` | Para transferi yapar | `X-User-Id` |
 | `GET` | `/api/v1/transactions/history` | Kullanıcının işlem geçmişini döner | `X-User-Id` |
 | `GET` | `/api/v1/transactions/fraud-report` | Şüpheli transfer raporunu döner | `X-User-Id`, `X-Role: ADMIN` |
+| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını siler | - |
+| `DELETE` | `/api/v1/transactions/wallets/{userId}` | Yalnızca kullanıcıya ait cüzdan kaydını siler | `X-User-Id` |
 
 #### Kullanıcı Oluşturma
 

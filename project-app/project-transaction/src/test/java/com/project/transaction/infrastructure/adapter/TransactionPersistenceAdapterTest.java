@@ -118,6 +118,14 @@ class TransactionPersistenceAdapterTest {
     }
 
     @Test
+    void deleteWalletByUserId_delegatesToWalletRepositoryOnly() {
+        adapter.deleteWalletByUserId("user-2");
+
+        verify(walletRepository).deleteByUserId("user-2");
+        verifyNoInteractions(recordRepository, mapper);
+    }
+
+    @Test
     void saveTransactionRecord_maps_andReturnsSavedModel() {
         TransactionRecordModel input = TransactionRecordModel.builder()
                 .id(null)

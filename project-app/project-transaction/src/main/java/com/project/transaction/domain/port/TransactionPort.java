@@ -31,6 +31,8 @@ public interface TransactionPort {
      * @return The saved wallet domain model, including the incremented optimistic locking version.
      */
     WalletModel updateWallet(WalletModel walletModel);
+
+    void deleteWalletByUserId(String userId);
     
     /**
      * Records a completed or attempted financial transaction into the persistence store.
