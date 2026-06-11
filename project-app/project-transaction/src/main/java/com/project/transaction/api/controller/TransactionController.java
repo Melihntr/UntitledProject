@@ -111,7 +111,13 @@ public class TransactionController {
         List<Object[]> suspiciousRecords = suspiciousTransfersHandler.handle();
         return ResponseEntity.ok(GenericResponse.success(suspiciousRecords));
     }
-
+    /**
+     * Deletes a user's wallet and all associated transactions.
+     * This is a sensitive operation that requires strict access control.
+     *
+     * @param loggedInUserId The ID of the authenticated user, extracted from the header.
+     * @return A generic response indicating the success of the deletion operation.
+     */
     @DeleteMapping("/wallets/{walletId}")
     public ResponseEntity<GenericResponse<Void>> deleteWallet(
             @RequestHeader("X-User-Id") String loggedInUserId,
