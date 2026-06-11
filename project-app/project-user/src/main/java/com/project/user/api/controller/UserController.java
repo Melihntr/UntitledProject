@@ -12,7 +12,6 @@ import com.project.user.domain.usecase.DeleteUserHandler;
 import com.project.user.domain.usecase.GetBasicUsersHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +24,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/users")
-@Slf4j
 @RequiredArgsConstructor
 public class UserController {
 
@@ -46,14 +44,11 @@ public class UserController {
     public ResponseEntity<GenericResponse<CreateUserResponse>> createUser(
             @Valid @RequestBody CreateUserRequest request) {
 
-        log.info("Received request to create a new user account.");
-
         UserCreateInput input = userApiMapper.toInput(request);
         UserModel createdUser = createUserHandler.handle(input);
         
         CreateUserResponse responseDto = userApiMapper.toResponse(createdUser);
         
-        log.info("Successfully created user account with ID: {}", createdUser.getId());
         return ResponseEntity.ok(GenericResponse.success(responseDto));
     }
 
@@ -67,8 +62,6 @@ public class UserController {
     @GetMapping("/basic-list")
     public ResponseEntity<GenericResponse<List<BasicUserResponse>>> getBasicUsers() {
         
-        log.info("Fetching basic user list for administrative overview.");
-
         // Execute the use case (passing null as this specific handler requires no filtering input)
         List<UserModel> users = getBasicUsersHandler.handle(null);
         
@@ -79,7 +72,6 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<GenericResponse<Void>> deleteUser(@PathVariable String userId) {
-        log.info("Received request to delete only the user record with ID: {}", userId);
         deleteUserHandler.handle(userId);
         return ResponseEntity.ok(GenericResponse.success(null, "User deleted successfully."));
     }

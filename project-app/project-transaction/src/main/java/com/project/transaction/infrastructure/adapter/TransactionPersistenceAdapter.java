@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Infrastructure persistence adapter implementing the outbound {@link TransactionPort}.
@@ -62,14 +63,13 @@ public class TransactionPersistenceAdapter implements TransactionPort {
     }
 
     @Override
-    public boolean deleteWalletByUserId(String userId) {
-        WalletEntity wallet = walletRepository.findByUserId(userId).orElse(null);
-        if (wallet == null) {
-            return false;
-        }
+    public Optional<WalletModel> findWalletById(String walletId) {
+        return walletRepository.findById(walletId).map(mapper::toWalletModel);
+    }
 
-        walletRepository.delete(wallet);
-        return true;
+    @Override
+    public void deleteWalletById(String walletId) {
+        walletRepository.deleteById(walletId);
     }
 
     /**

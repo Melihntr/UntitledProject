@@ -30,7 +30,7 @@ public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Voi
     @Override
     public List<UserModel> handle(Void input) {
         
-        log.info("Executing use case to retrieve all basic user profiles.");
+        log.info("user.list.request");
 
         // Delegate the data retrieval request to the infrastructure port
         List<UserModel> users = userPort.getAllUsers();
@@ -44,7 +44,7 @@ public class GetBasicUsersHandler implements UseCaseHandler<List<UserModel>, Voi
          * and return a Spring Data Page<UserModel>.
          */
         
-        log.debug("Successfully retrieved {} users from the infrastructure layer.", users.size());
+        log.info("user.list.success resultCount={}", users.size());
         
         return users;
     }

@@ -16,10 +16,11 @@ public class DeleteUserHandler {
 
     @Transactional
     public void handle(String userId) {
-        log.info("Deleting user record with ID: {}", userId);
+        log.info("user.delete.request userId={}", userId);
         if (!userPort.deleteUserById(userId)) {
+            log.warn("user.delete.not-found userId={}", userId);
             throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
-        log.info("Successfully deleted user record with ID: {}", userId);
+        log.info("user.delete.success userId={}", userId);
     }
 }

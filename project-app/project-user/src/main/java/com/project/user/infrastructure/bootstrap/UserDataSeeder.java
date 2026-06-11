@@ -27,7 +27,7 @@ public class UserDataSeeder implements CommandLineRunner {
      */
     @Override
     public void run(String... args) {
-        log.info("Seeding test data with static IDs.");
+        log.info("seed.user-data.request");
 
         UserModel user1 = seedUser(
                 "11111111-1111-1111-1111-111111111111",
@@ -40,9 +40,7 @@ public class UserDataSeeder implements CommandLineRunner {
                 "receiver@enterprise.com"
         );
 
-        log.info("Test data generated successfully.");
-        log.info("Sender ID (use in header and payload): {}", user1.getId());
-        log.info("Receiver ID (use in payload): {}", user2.getId());
+        log.info("seed.user-data.success senderUserId={} receiverUserId={}", user1.getId(), user2.getId());
     }
 
     private UserModel seedUser(String id, String username, String email) {

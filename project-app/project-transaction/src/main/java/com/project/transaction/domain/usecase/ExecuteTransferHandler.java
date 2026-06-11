@@ -40,8 +40,8 @@ public class ExecuteTransferHandler implements UseCaseHandler<TransactionRecordM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TransactionRecordModel handle(TransactionInput input) {
-        log.info("Initiating transfer of {} from User {} to User {}",
-                input.getAmount(), input.getSenderUserId(), input.getReceiverUserId());
+        log.info("transfer.execute.request senderUserId={} receiverUserId={} amount={}",
+                input.getSenderUserId(), input.getReceiverUserId(), input.getAmount());
 
         WalletModel senderWallet = transactionPort.getWalletByUserId(input.getSenderUserId());
         senderWallet.deductBalance(input.getAmount());
@@ -60,6 +60,9 @@ public class ExecuteTransferHandler implements UseCaseHandler<TransactionRecordM
                 .build();
 
         TransactionRecordModel savedRecord = transactionPort.saveTransactionRecord(record);
+        log.info("transfer.execute.success transactionId={} senderUserId={} receiverUserId={} amount={} status={}",
+                savedRecord.getId(), savedRecord.getSenderUserId(), savedRecord.getReceiverUserId(),
+                savedRecord.getAmount(), savedRecord.getStatus());
         sendTransferNotification(savedRecord);
 
         return savedRecord;

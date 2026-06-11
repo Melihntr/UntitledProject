@@ -17,12 +17,6 @@ public class TransactionAccessValidator {
         }
     }
 
-    public void validateWalletOwner(String loggedInUserId, String userId) {
-        if (!loggedInUserId.equals(userId)) {
-            throw new IllegalArgumentException("Security Violation: You can only delete your own wallet.");
-        }
-    }
-
     public void validateAdminRole(String role) {
         if (!"ADMIN".equalsIgnoreCase(role)) {
             throw new SecurityException("Access Denied: Only administrators can access system-wide fraud reports.");

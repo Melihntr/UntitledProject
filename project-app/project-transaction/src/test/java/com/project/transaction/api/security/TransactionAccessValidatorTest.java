@@ -34,18 +34,6 @@ class TransactionAccessValidatorTest {
     }
 
     @Test
-    void validateWalletOwner_allowsMatchingUser() {
-        assertThatCode(() -> validator.validateWalletOwner("alice", "alice")).doesNotThrowAnyException();
-    }
-
-    @Test
-    void validateWalletOwner_rejectsDifferentUser() {
-        assertThatThrownBy(() -> validator.validateWalletOwner("alice", "bob"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("own wallet");
-    }
-
-    @Test
     void validateAdminRole_allowsAdminCaseInsensitive() {
         assertThatCode(() -> validator.validateAdminRole("admin")).doesNotThrowAnyException();
     }

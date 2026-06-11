@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Outbound (Driven) Port interface for the Transaction domain.
@@ -32,7 +33,9 @@ public interface TransactionPort {
      */
     WalletModel updateWallet(WalletModel walletModel);
 
-    boolean deleteWalletByUserId(String userId);
+    Optional<WalletModel> findWalletById(String walletId);
+
+    void deleteWalletById(String walletId);
     
     /**
      * Records a completed or attempted financial transaction into the persistence store.

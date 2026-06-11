@@ -49,25 +49,29 @@ public class GetTransactionHistoryHandler implements UseCaseHandler<Page<Transac
     @Override
     public Page<TransactionRecordModel> handle(HistoryFilterInput input) {
         
-        log.info("Fetching transaction history for user ID: {} from {} to {}",
-                input.getUserId(), input.getStartDate(), input.getEndDate());
+        log.info("transaction.history.request userId={} startDate={} endDate={} page={} size={}",
+                input.getUserId(), input.getStartDate(), input.getEndDate(),
+                input.getPageable().getPageNumber(), input.getPageable().getPageSize());
 
         // Domain Validation: The start date cannot be in the future relative to the end date.
         // Future Extension Point: Additional business rules can be injected here, such as 
         // restricting the maximum date range (e.g., max 30 days per query) to prevent database overload.
         if (input.getStartDate().isAfter(input.getEndDate())) {
-            log.warn("Invalid date range provided by user {}: StartDate={}, EndDate={}",
+            log.warn("transaction.history.rejected userId={} startDate={} endDate={} reason=INVALID_DATE_RANGE",
                     input.getUserId(), input.getStartDate(), input.getEndDate());
             // Note: In a production setup, throwing your custom BusinessException is highly recommended here.
             throw new IllegalArgumentException("Business Rule Violation: Start date cannot be after the end date.");
         }
 
         // Delegate the validated data retrieval request to the infrastructure port
-        return transactionPort.getTransactionHistory(
+        Page<TransactionRecordModel> result = transactionPort.getTransactionHistory(
                 input.getUserId(), 
                 input.getStartDate(), 
                 input.getEndDate(), 
                 input.getPageable()
         );
+        log.info("transaction.history.success userId={} resultCount={} totalElements={}",
+                input.getUserId(), result.getNumberOfElements(), result.getTotalElements());
+        return result;
     }
 }

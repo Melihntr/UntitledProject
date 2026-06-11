@@ -35,7 +35,7 @@ public class UserPersistenceAdapter implements UserPort {
      */
     @Override
     public UserModel save(UserModel userModel) {
-        log.debug("Persisting user domain model to the database: {}", userModel.getId());
+        log.debug("user.persistence.save.request userId={} username={}", userModel.getId(), userModel.getUsername());
 
         // 1. Convert Domain Model to Database Entity
         UserEntity entity = userInfrastructureMapper.toEntity(userModel);
@@ -46,7 +46,7 @@ public class UserPersistenceAdapter implements UserPort {
         // 3. Convert saved Entity back to Domain Model and return
         UserModel savedModel = userInfrastructureMapper.toModel(savedEntity);
         
-        log.info("Successfully persisted user with ID: {}", savedModel.getId());
+        log.debug("user.persistence.save.success userId={}", savedModel.getId());
         return savedModel;
     }
 
@@ -58,27 +58,27 @@ public class UserPersistenceAdapter implements UserPort {
      */
     @Override
     public List<UserModel> getAllUsers() {
-        log.debug("Retrieving all user records from the repository.");
+        log.debug("user.persistence.list.request");
         
         List<UserModel> users = userRepository.findAll().stream()
                 .map(userInfrastructureMapper::toModel)
                 .collect(Collectors.toList());
 
-        log.info("Retrieved {} users from the database.", users.size());
+        log.debug("user.persistence.list.success resultCount={}", users.size());
         return users;
     }
 
     @Override
     public boolean deleteUserById(String userId) {
-        log.debug("Deleting only the user record with ID: {}", userId);
+        log.debug("user.persistence.delete.request userId={}", userId);
         UserEntity user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            log.warn("User record not found for deletion. ID: {}", userId);
+            log.debug("user.persistence.delete.not-found userId={}", userId);
             return false;
         }
 
         userRepository.delete(user);
-        log.info("Successfully deleted user record with ID: {}", userId);
+        log.debug("user.persistence.delete.success userId={}", userId);
         return true;
     }
 }

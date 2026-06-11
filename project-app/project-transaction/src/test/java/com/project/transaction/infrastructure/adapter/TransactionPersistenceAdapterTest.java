@@ -118,26 +118,36 @@ class TransactionPersistenceAdapterTest {
     }
 
     @Test
-    void deleteWalletByUserId_whenWalletExists_deletesAndReturnsTrue() {
+    void findWalletById_whenWalletExists_returnsMappedWallet() {
         WalletEntity entity = new WalletEntity();
-        when(walletRepository.findByUserId("user-2")).thenReturn(Optional.of(entity));
+        WalletModel model = WalletModel.builder().id("wallet-2").userId("user-2").build();
+        when(walletRepository.findById("wallet-2")).thenReturn(Optional.of(entity));
+        when(mapper.toWalletModel(entity)).thenReturn(model);
 
-        boolean result = adapter.deleteWalletByUserId("user-2");
+        Optional<WalletModel> result = adapter.findWalletById("wallet-2");
 
-        assertThat(result).isTrue();
-        verify(walletRepository).findByUserId("user-2");
-        verify(walletRepository).delete(entity);
+        assertThat(result).contains(model);
+        verify(walletRepository).findById("wallet-2");
+        verify(mapper).toWalletModel(entity);
+        verifyNoInteractions(recordRepository);
+    }
+
+    @Test
+    void findWalletById_whenWalletDoesNotExist_returnsEmpty() {
+        when(walletRepository.findById("missing")).thenReturn(Optional.empty());
+
+        Optional<WalletModel> result = adapter.findWalletById("missing");
+
+        assertThat(result).isEmpty();
+        verify(walletRepository).findById("missing");
         verifyNoInteractions(recordRepository, mapper);
     }
 
     @Test
-    void deleteWalletByUserId_whenWalletDoesNotExist_returnsFalse() {
-        when(walletRepository.findByUserId("missing")).thenReturn(Optional.empty());
+    void deleteWalletById_delegatesToRepository() {
+        adapter.deleteWalletById("wallet-2");
 
-        boolean result = adapter.deleteWalletByUserId("missing");
-
-        assertThat(result).isFalse();
-        verify(walletRepository).findByUserId("missing");
+        verify(walletRepository).deleteById("wallet-2");
         verifyNoInteractions(recordRepository, mapper);
     }
 

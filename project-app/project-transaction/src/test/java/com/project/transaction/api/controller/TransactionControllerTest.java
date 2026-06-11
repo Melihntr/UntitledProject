@@ -214,22 +214,13 @@ class TransactionControllerTest {
 
     @Test
     void deleteWallet_whenOwner_delegatesAndReturnsGenericSuccessResponse() {
-        ResponseEntity<GenericResponse<Void>> response = controller.deleteWallet("alice", "alice");
+        ResponseEntity<GenericResponse<Void>> response = controller.deleteWallet("alice", "wallet-1");
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isTrue();
         assertThat(response.getBody().getMessage()).isEqualTo("Wallet deleted successfully.");
         assertThat(response.getBody().getData()).isNull();
-        verify(deleteWalletHandler).handle("alice");
-    }
-
-    @Test
-    void deleteWallet_whenRequesterIsNotOwner_rejectsRequest() {
-        assertThatThrownBy(() -> controller.deleteWallet("alice", "bob"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("own wallet");
-
-        verifyNoInteractions(deleteWalletHandler);
+        verify(deleteWalletHandler).handle(new DeleteWalletHandler.DeleteWalletInput("wallet-1", "alice"));
     }
 }

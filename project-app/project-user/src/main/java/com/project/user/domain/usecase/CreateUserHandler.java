@@ -33,7 +33,7 @@ public class CreateUserHandler implements UseCaseHandler<UserModel, UserCreateIn
     @Override
     public UserModel handle(UserCreateInput input) {
         
-        log.info("Initiating user creation process for username: {}", input.getUsername());
+        log.info("user.create.request username={}", input.getUsername());
 
         UserModel newUser = UserModel.builder()
                 .id(input.getId())
@@ -57,13 +57,13 @@ public class CreateUserHandler implements UseCaseHandler<UserModel, UserCreateIn
         UserModel savedUser = userPort.save(newUser);
         publishUserCreatedEvent(savedUser);
         
-        log.info("Successfully completed user creation process. Assigned ID: {}", savedUser.getId());
+        log.info("user.create.success userId={} username={}", savedUser.getId(), savedUser.getUsername());
         
         return savedUser;
     }
 
     private void publishUserCreatedEvent(UserModel savedUser) {
-        log.debug("Publishing UserCreatedEvent for User ID: {}", savedUser.getId());
+        log.info("user.created-event.publish userId={}", savedUser.getId());
         eventPublisherPort.publishUserCreated(savedUser.getId());
     }
 }

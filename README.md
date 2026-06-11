@@ -296,7 +296,7 @@ Varsayılan adres: `http://localhost:8080`
 | `GET` | `/api/v1/transactions/history` | Kullanıcının işlem geçmişini döner | `X-User-Id` |
 | `GET` | `/api/v1/transactions/fraud-report` | Şüpheli transfer raporunu döner | `X-User-Id`, `X-Role: ADMIN` |
 | `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını siler; bulunamazsa `404` döner | - |
-| `DELETE` | `/api/v1/transactions/wallets/{userId}` | Yalnızca kullanıcıya ait cüzdan kaydını siler; bulunamazsa `404` döner | `X-User-Id` |
+| `DELETE` | `/api/v1/transactions/wallets/{walletId}` | Wallet ID ile yalnızca ilgili cüzdanı siler; sahiplik kontrolü yapar | `X-User-Id` |
 
 #### Kullanıcı Oluşturma
 
@@ -364,6 +364,15 @@ Başarılı silme işlemleri HTTP `200 OK` ve standart başarılı cevap döner:
   "data": null
 }
 ```
+
+Wallet silme isteğinde path parametresi wallet ID'dir:
+
+```http
+DELETE /api/v1/transactions/wallets/wallet-id
+X-User-Id: wallet-owner-user-id
+```
+
+Wallet mevcut olsa bile `X-User-Id` wallet sahibine ait değilse HTTP `403 Forbidden` ve başarısız `GenericResponse` döner. Sahiplik kontrolü controller yerine `DeleteWalletHandler` içinde uygulanır.
 
 ### Notification App
 
@@ -544,6 +553,8 @@ Enterprise App ve Notification App kendi merkezi exception handler'larına sahip
 
 | Hata | HTTP Status |
 |---|---|
+| Yetkisiz kaynak erişimi | `403 Forbidden` |
+| Kaynak bulunamadı | `404 Not Found` |
 | Business exception | `400 Bad Request` |
 | Validation hatası | `400 Bad Request` |
 | Data integrity ihlali | `409 Conflict` |
@@ -600,6 +611,8 @@ Notification akışında başarı, duplicate kayıt, validation hatası, persist
 - `notification.dispatch.*`
 
 Loglarda mümkün olduğunca `eventId`, `referenceId`, `recipientId`, hata kodu, HTTP status ve trace ID gibi operasyonel olarak anlamlı alanlar bulunur.
+
+Controller sınıfları log üretmez. İş girdileri, uygulanan kararlar ve sonuçlar use case/service katmanında; event kaynaklı işlemler listener katmanında; teknik iletişim ayrıntıları ise ilgili adapter ve exception handler katmanında loglanır.
 
 ## Test Stratejisi ve Coverage
 

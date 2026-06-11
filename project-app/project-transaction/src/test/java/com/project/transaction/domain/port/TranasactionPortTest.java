@@ -42,8 +42,15 @@ class TransactionPortTest {
         }
 
         @Override
-        public boolean deleteWalletByUserId(String userId) {
-            return wallets.remove(userId) != null;
+        public Optional<WalletModel> findWalletById(String walletId) {
+            return wallets.values().stream()
+                    .filter(wallet -> walletId.equals(wallet.getId()))
+                    .findFirst();
+        }
+
+        @Override
+        public void deleteWalletById(String walletId) {
+            findWalletById(walletId).ifPresent(wallet -> wallets.remove(wallet.getUserId()));
         }
 
         @Override
@@ -115,23 +122,29 @@ class TransactionPortTest {
     }
 
     @Test
-    void deleteWalletByUserId_removesOnlyRequestedWallet() {
+    void deleteWalletById_removesOnlyRequestedWallet() {
         WalletModel aliceWallet = WalletModel.builder().id("w1").userId("alice").balance(10.0).build();
         WalletModel bobWallet = WalletModel.builder().id("w2").userId("bob").balance(20.0).build();
         inMemoryPort.updateWallet(aliceWallet);
         inMemoryPort.updateWallet(bobWallet);
 
-        boolean deleted = inMemoryPort.deleteWalletByUserId("alice");
+        assertThat(inMemoryPort.findWalletById("w1")).contains(aliceWallet);
+        inMemoryPort.deleteWalletById("w1");
 
-        assertThat(deleted).isTrue();
         assertThatThrownBy(() -> inMemoryPort.getWalletByUserId("alice"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(inMemoryPort.getWalletByUserId("bob")).isSameAs(bobWallet);
     }
 
     @Test
-    void deleteWalletByUserId_whenMissing_returnsFalse() {
-        assertThat(inMemoryPort.deleteWalletByUserId("missing")).isFalse();
+    void deleteWalletById_whenMissing_leavesWalletsUnchanged() {
+        WalletModel wallet = WalletModel.builder().id("w1").userId("alice").balance(10.0).build();
+        inMemoryPort.updateWallet(wallet);
+
+        inMemoryPort.deleteWalletById("missing");
+
+        assertThat(inMemoryPort.findWalletById("missing")).isEmpty();
+        assertThat(inMemoryPort.getWalletByUserId("alice")).isSameAs(wallet);
     }
 
     @Test

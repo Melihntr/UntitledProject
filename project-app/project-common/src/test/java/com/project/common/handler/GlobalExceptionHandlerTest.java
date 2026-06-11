@@ -1,5 +1,6 @@
 package com.project.common.handler;
 
+import com.project.common.exception.AccessDeniedException;
 import com.project.common.exception.BusinessException;
 import com.project.common.exception.ResourceNotFoundException;
 import com.project.common.model.GenericResponse;
@@ -39,6 +40,19 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
         assertThat(response.getBody().getMessage()).isEqualTo("bad business");
+    }
+
+    @Test
+    void handleAccessDeniedException_returnsForbidden() {
+        MDC.put("traceId", "trace-forbidden");
+
+        ResponseEntity<GenericResponse<Void>> response =
+                handler.handleAccessDeniedException(new AccessDeniedException("Wallet access denied"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isFalse();
+        assertThat(response.getBody().getMessage()).isEqualTo("Wallet access denied");
     }
 
     @Test

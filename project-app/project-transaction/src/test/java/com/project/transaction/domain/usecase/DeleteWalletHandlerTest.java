@@ -1,6 +1,8 @@
 package com.project.transaction.domain.usecase;
 
+import com.project.common.exception.AccessDeniedException;
 import com.project.common.exception.ResourceNotFoundException;
+import com.project.transaction.domain.model.WalletModel;
 import com.project.transaction.domain.port.TransactionPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class DeleteWalletHandlerTest {
@@ -23,21 +27,35 @@ class DeleteWalletHandlerTest {
 
     @Test
     void handle_deletesOnlyRequestedUsersWallet() {
-        when(transactionPort.deleteWalletByUserId("u1")).thenReturn(true);
+        WalletModel wallet = WalletModel.builder().id("wallet-1").userId("u1").build();
+        when(transactionPort.findWalletById("wallet-1")).thenReturn(Optional.of(wallet));
 
-        handler.handle("u1");
+        handler.handle(new DeleteWalletHandler.DeleteWalletInput("wallet-1", "u1"));
 
-        verify(transactionPort).deleteWalletByUserId("u1");
+        verify(transactionPort).findWalletById("wallet-1");
+        verify(transactionPort).deleteWalletById("wallet-1");
     }
 
     @Test
     void handle_whenWalletDoesNotExist_throwsResourceNotFound() {
-        when(transactionPort.deleteWalletByUserId("missing")).thenReturn(false);
+        when(transactionPort.findWalletById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> handler.handle("missing"))
+        assertThatThrownBy(() -> handler.handle(new DeleteWalletHandler.DeleteWalletInput("missing", "u1")))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Wallet not found for user ID: missing");
+                .hasMessage("Wallet not found with ID: missing");
 
-        verify(transactionPort).deleteWalletByUserId("missing");
+        verify(transactionPort).findWalletById("missing");
+    }
+
+    @Test
+    void handle_whenWalletBelongsToAnotherUser_throwsAccessDenied() {
+        WalletModel wallet = WalletModel.builder().id("wallet-2").userId("owner").build();
+        when(transactionPort.findWalletById("wallet-2")).thenReturn(Optional.of(wallet));
+
+        assertThatThrownBy(() -> handler.handle(new DeleteWalletHandler.DeleteWalletInput("wallet-2", "requester")))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("You can only delete your own wallet.");
+
+        verify(transactionPort).findWalletById("wallet-2");
     }
 }

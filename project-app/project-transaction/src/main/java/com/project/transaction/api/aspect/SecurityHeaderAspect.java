@@ -29,16 +29,13 @@ public class SecurityHeaderAspect {
         String userId = request.getHeader(USER_ID_HEADER);
 
         if (userId == null || userId.isBlank()) {
-            log.error("Security breach attempt: Missing X-User-Id header");
+            log.warn("security.header.missing header={}", USER_ID_HEADER);
             throw new SecurityException("Missing mandatory security header: " + USER_ID_HEADER);
         }
 
         MDC.put(USER_ID_MDC_KEY, userId);
         try {
-            log.info("Starting execution of endpoint: {}", request.getRequestURI());
-            Object result = joinPoint.proceed();
-            log.info("Successfully executed endpoint: {}", request.getRequestURI());
-            return result;
+            return joinPoint.proceed();
         } finally {
             MDC.remove(USER_ID_MDC_KEY);
         }

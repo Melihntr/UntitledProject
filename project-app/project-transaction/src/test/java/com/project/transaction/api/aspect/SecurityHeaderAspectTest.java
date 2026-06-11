@@ -70,7 +70,6 @@ class SecurityHeaderAspectTest {
     void whenUserIdProvided_setsUserIdDuringProceedAndRemovesOnlyUserId() throws Throwable {
         HttpServletRequest request = bindRequest();
         when(request.getHeader("X-User-Id")).thenReturn("user-1");
-        when(request.getRequestURI()).thenReturn("/api/test");
         MDC.put("traceId", "trace-1");
         when(joinPoint.proceed()).thenAnswer(invocation -> {
             assertThat(MDC.get("userId")).isEqualTo("user-1");
@@ -87,7 +86,6 @@ class SecurityHeaderAspectTest {
     void whenEndpointFails_removesUserId() throws Throwable {
         HttpServletRequest request = bindRequest();
         when(request.getHeader("X-User-Id")).thenReturn("user-1");
-        when(request.getRequestURI()).thenReturn("/api/test");
         when(joinPoint.proceed()).thenThrow(new RuntimeException("boom"));
 
         assertThatThrownBy(() -> aspect.validateUserHeader(joinPoint))

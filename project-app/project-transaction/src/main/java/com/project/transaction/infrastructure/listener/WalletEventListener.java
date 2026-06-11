@@ -29,7 +29,7 @@ public class WalletEventListener {
     @EventListener
     public void onUserCreated(UserCreatedEvent event) {
         
-        log.info("Intercepted UserCreatedEvent for User ID: {}. Provisioning new wallet...", event.userId());
+        log.info("wallet.provision.request eventType=UserCreatedEvent userId={}", event.userId());
 
         WalletEntity wallet = new WalletEntity();
         wallet.setUserId(event.userId()); // Extract User ID from the event payload
@@ -42,6 +42,7 @@ public class WalletEventListener {
         // Persist the newly provisioned wallet to the database
         walletRepository.save(wallet);
         
-        log.info("SUCCESS: Wallet automatically provisioned for User ID: {}", event.userId());
+        log.info("wallet.provision.success walletId={} userId={} initialBalance={}",
+                wallet.getId(), event.userId(), wallet.getBalance());
     }
 }

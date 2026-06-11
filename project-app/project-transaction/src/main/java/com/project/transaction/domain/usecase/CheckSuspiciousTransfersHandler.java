@@ -2,6 +2,7 @@ package com.project.transaction.domain.usecase;
 
 import com.project.transaction.domain.port.TransactionPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * @Configuration class in the infrastructure layer to keep the core domain 100% framework-agnostic.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CheckSuspiciousTransfersHandler {
 
@@ -30,7 +32,9 @@ public class CheckSuspiciousTransfersHandler {
      * @return A list of raw object arrays representing aggregated suspicious transaction data.
      */
     public List<Object[]> handle() {
-        // Delegate the data retrieval to the infrastructure port
-        return transactionPort.getSuspiciousTransfers();
+        log.info("fraud-report.request");
+        List<Object[]> result = transactionPort.getSuspiciousTransfers();
+        log.info("fraud-report.success resultCount={}", result.size());
+        return result;
     }
 }

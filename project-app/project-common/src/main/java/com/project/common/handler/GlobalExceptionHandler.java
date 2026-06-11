@@ -1,5 +1,6 @@
 package com.project.common.handler;
 
+import com.project.common.exception.AccessDeniedException;
 import com.project.common.exception.BusinessException;
 import com.project.common.exception.ResourceNotFoundException;
 import com.project.common.model.GenericResponse;
@@ -19,10 +20,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GenericResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+        String traceId = MDC.get("traceId");
+        log.warn("request.access-denied traceId={} message={}", traceId, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(GenericResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<GenericResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         String traceId = MDC.get("traceId");
-        log.warn("Resource not found [TraceID: {}] - Message: {}", traceId, ex.getMessage());
+        log.warn("request.resource-not-found traceId={} message={}", traceId, ex.getMessage());
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
@@ -35,7 +46,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<GenericResponse<Void>> handleBusinessException(BusinessException ex) {
         String traceId = MDC.get("traceId");
-        log.warn("Business rule violation [TraceID: {}] - Code: {}, Message: {}", traceId, ex.getErrorCode(), ex.getMessage());
+        log.warn("request.business-rule-violation traceId={} errorCode={} message={}",
+                traceId, ex.getErrorCode(), ex.getMessage());
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -51,7 +63,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        log.warn("Validation failed: {}", errorMessage);
+        log.warn("request.validation-failed message={}", errorMessage);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -64,7 +76,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponse<Void>> handleGeneralException(Exception ex) {
         String traceId = MDC.get("traceId");
-        log.error("Unexpected system error occurred [TraceID: {}]", traceId, ex);
+        log.error("request.unexpected-failure traceId={}", traceId, ex);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -79,7 +91,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GenericResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         String traceId = MDC.get("traceId");
 
-        log.warn("Data integrity violation [TraceID: {}] - Message: {}", traceId, ex.getMessage());
+        log.warn("request.data-integrity-violation traceId={} message={}", traceId, ex.getMessage());
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)

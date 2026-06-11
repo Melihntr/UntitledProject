@@ -19,7 +19,9 @@ public class GetUserWalletSummaryHandler implements UseCaseHandler<List<UserWall
     // Hatanın çözümü bu satırda: Parametre olarak (Void input) almak zorunda!
     @Override
     public List<UserWalletSummaryModel> handle(Void input) {
-        log.info("Admin paneli icin Kullanici-Cuzdan ozeti raporu hazirlaniyor.");
-        return reportPort.getUserWalletSummaries();
+        log.info("report.user-wallet-summary.request");
+        List<UserWalletSummaryModel> result = reportPort.getUserWalletSummaries();
+        log.info("report.user-wallet-summary.success resultCount={}", result.size());
+        return result;
     }
 }
