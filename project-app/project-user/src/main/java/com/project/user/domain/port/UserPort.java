@@ -13,5 +13,5 @@ public interface UserPort {
 
     java.util.List<UserModel> getAllUsers();
 
-    void deleteUserById(String userId);
+    boolean deleteUserById(String userId);
 }

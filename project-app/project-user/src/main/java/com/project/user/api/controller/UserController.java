@@ -78,9 +78,9 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
+    public ResponseEntity<GenericResponse<Void>> deleteUser(@PathVariable String userId) {
         log.info("Received request to delete only the user record with ID: {}", userId);
         deleteUserHandler.handle(userId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(GenericResponse.success(null, "User deleted successfully."));
     }
 }

@@ -213,11 +213,14 @@ class TransactionControllerTest {
     }
 
     @Test
-    void deleteWallet_whenOwner_delegatesAndReturnsNoContent() {
-        ResponseEntity<Void> response = controller.deleteWallet("alice", "alice");
+    void deleteWallet_whenOwner_delegatesAndReturnsGenericSuccessResponse() {
+        ResponseEntity<GenericResponse<Void>> response = controller.deleteWallet("alice", "alice");
 
-        assertThat(response.getStatusCode().value()).isEqualTo(204);
-        assertThat(response.getBody()).isNull();
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isTrue();
+        assertThat(response.getBody().getMessage()).isEqualTo("Wallet deleted successfully.");
+        assertThat(response.getBody().getData()).isNull();
         verify(deleteWalletHandler).handle("alice");
     }
 

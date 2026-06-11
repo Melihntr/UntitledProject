@@ -1,6 +1,7 @@
 package com.project.common.handler;
 
 import com.project.common.exception.BusinessException;
+import com.project.common.exception.ResourceNotFoundException;
 import com.project.common.model.GenericResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -17,6 +18,16 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<GenericResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        String traceId = MDC.get("traceId");
+        log.warn("Resource not found [TraceID: {}] - Message: {}", traceId, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(GenericResponse.error(ex.getMessage()));
+    }
 
     /**
      * Kendi yazdigimiz is kurallari hatalarini (BusinessException) yakalar. (Orn: Bakiye yetersiz)

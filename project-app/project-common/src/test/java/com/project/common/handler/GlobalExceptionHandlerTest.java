@@ -1,6 +1,7 @@
 package com.project.common.handler;
 
 import com.project.common.exception.BusinessException;
+import com.project.common.exception.ResourceNotFoundException;
 import com.project.common.model.GenericResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,19 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
         assertThat(response.getBody().getMessage()).isEqualTo("bad business");
+    }
+
+    @Test
+    void handleResourceNotFoundException_returnsNotFound() {
+        MDC.put("traceId", "trace-not-found");
+
+        ResponseEntity<GenericResponse<Void>> response =
+                handler.handleResourceNotFoundException(new ResourceNotFoundException("User not found"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().isSuccess()).isFalse();
+        assertThat(response.getBody().getMessage()).isEqualTo("User not found");
     }
 
     @Test

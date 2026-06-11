@@ -113,12 +113,12 @@ public class TransactionController {
     }
 
     @DeleteMapping("/wallets/{userId}")
-    public ResponseEntity<Void> deleteWallet(
+    public ResponseEntity<GenericResponse<Void>> deleteWallet(
             @RequestHeader("X-User-Id") String loggedInUserId,
             @PathVariable String userId) {
 
         accessValidator.validateWalletOwner(loggedInUserId, userId);
         deleteWalletHandler.handle(userId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(GenericResponse.success(null, "Wallet deleted successfully."));
     }
 }

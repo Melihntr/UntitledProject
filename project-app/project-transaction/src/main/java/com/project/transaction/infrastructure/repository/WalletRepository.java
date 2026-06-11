@@ -23,6 +23,4 @@ public interface WalletRepository extends JpaRepository<WalletEntity, String> {
      * enforces safe null-handling in the adapter layer.
      */
     Optional<WalletEntity> findByUserId(String userId);
-
-    void deleteByUserId(String userId);
 }

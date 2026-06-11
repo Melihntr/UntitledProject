@@ -69,9 +69,16 @@ public class UserPersistenceAdapter implements UserPort {
     }
 
     @Override
-    public void deleteUserById(String userId) {
+    public boolean deleteUserById(String userId) {
         log.debug("Deleting only the user record with ID: {}", userId);
-        userRepository.deleteById(userId);
+        UserEntity user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.warn("User record not found for deletion. ID: {}", userId);
+            return false;
+        }
+
+        userRepository.delete(user);
         log.info("Successfully deleted user record with ID: {}", userId);
+        return true;
     }
 }

@@ -295,8 +295,8 @@ Varsayılan adres: `http://localhost:8080`
 | `POST` | `/api/v1/transactions/transfer` | Para transferi yapar | `X-User-Id` |
 | `GET` | `/api/v1/transactions/history` | Kullanıcının işlem geçmişini döner | `X-User-Id` |
 | `GET` | `/api/v1/transactions/fraud-report` | Şüpheli transfer raporunu döner | `X-User-Id`, `X-Role: ADMIN` |
-| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını siler | - |
-| `DELETE` | `/api/v1/transactions/wallets/{userId}` | Yalnızca kullanıcıya ait cüzdan kaydını siler | `X-User-Id` |
+| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını siler; bulunamazsa `404` döner | - |
+| `DELETE` | `/api/v1/transactions/wallets/{userId}` | Yalnızca kullanıcıya ait cüzdan kaydını siler; bulunamazsa `404` döner | `X-User-Id` |
 
 #### Kullanıcı Oluşturma
 
@@ -342,6 +342,28 @@ X-User-Id: user-id
 ```
 
 Header'daki kullanıcı yalnızca kendi işlem geçmişini görüntüleyebilir.
+
+#### User ve Wallet Silme Cevapları
+
+Başarılı silme işlemleri HTTP `200 OK` ve standart başarılı cevap döner:
+
+```json
+{
+  "success": true,
+  "message": "User deleted successfully.",
+  "data": null
+}
+```
+
+İlgili user veya wallet bulunamadığında HTTP `404 Not Found` ve standart başarısız cevap döner:
+
+```json
+{
+  "success": false,
+  "message": "User not found with ID: requested-user-id",
+  "data": null
+}
+```
 
 ### Notification App
 

@@ -1,5 +1,6 @@
 package com.project.transaction.domain.usecase;
 
+import com.project.common.exception.ResourceNotFoundException;
 import com.project.transaction.domain.port.TransactionPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,9 @@ public class DeleteWalletHandler {
     @Transactional
     public void handle(String userId) {
         log.info("Deleting wallet record for user ID: {}", userId);
-        transactionPort.deleteWalletByUserId(userId);
+        if (!transactionPort.deleteWalletByUserId(userId)) {
+            throw new ResourceNotFoundException("Wallet not found for user ID: " + userId);
+        }
         log.info("Successfully deleted wallet record for user ID: {}", userId);
     }
 }

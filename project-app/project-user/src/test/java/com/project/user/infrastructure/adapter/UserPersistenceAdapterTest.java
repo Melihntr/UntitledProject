@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -63,10 +64,26 @@ class UserPersistenceAdapterTest {
     }
 
     @Test
-    void deleteUserById_delegatesToUserRepositoryOnly() {
-        adapter.deleteUserById("u1");
+    void deleteUserById_whenUserExists_deletesAndReturnsTrue() {
+        UserEntity entity = new UserEntity();
+        when(userRepository.findById("u1")).thenReturn(Optional.of(entity));
 
-        verify(userRepository).deleteById("u1");
+        boolean result = adapter.deleteUserById("u1");
+
+        assertThat(result).isTrue();
+        verify(userRepository).findById("u1");
+        verify(userRepository).delete(entity);
+        verifyNoInteractions(userInfrastructureMapper);
+    }
+
+    @Test
+    void deleteUserById_whenUserDoesNotExist_returnsFalse() {
+        when(userRepository.findById("missing")).thenReturn(Optional.empty());
+
+        boolean result = adapter.deleteUserById("missing");
+
+        assertThat(result).isFalse();
+        verify(userRepository).findById("missing");
         verifyNoInteractions(userInfrastructureMapper);
     }
 }

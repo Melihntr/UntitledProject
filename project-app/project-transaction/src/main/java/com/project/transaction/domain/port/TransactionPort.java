@@ -32,7 +32,7 @@ public interface TransactionPort {
      */
     WalletModel updateWallet(WalletModel walletModel);
 
-    void deleteWalletByUserId(String userId);
+    boolean deleteWalletByUserId(String userId);
     
     /**
      * Records a completed or attempted financial transaction into the persistence store.

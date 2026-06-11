@@ -1,5 +1,6 @@
 package com.project.user.domain.usecase;
 
+import com.project.common.exception.ResourceNotFoundException;
 import com.project.user.domain.port.UserPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,9 @@ public class DeleteUserHandler {
     @Transactional
     public void handle(String userId) {
         log.info("Deleting user record with ID: {}", userId);
-        userPort.deleteUserById(userId);
+        if (!userPort.deleteUserById(userId)) {
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
+        }
         log.info("Successfully deleted user record with ID: {}", userId);
     }
 }

@@ -42,8 +42,8 @@ class TransactionPortTest {
         }
 
         @Override
-        public void deleteWalletByUserId(String userId) {
-            wallets.remove(userId);
+        public boolean deleteWalletByUserId(String userId) {
+            return wallets.remove(userId) != null;
         }
 
         @Override
@@ -121,11 +121,17 @@ class TransactionPortTest {
         inMemoryPort.updateWallet(aliceWallet);
         inMemoryPort.updateWallet(bobWallet);
 
-        inMemoryPort.deleteWalletByUserId("alice");
+        boolean deleted = inMemoryPort.deleteWalletByUserId("alice");
 
+        assertThat(deleted).isTrue();
         assertThatThrownBy(() -> inMemoryPort.getWalletByUserId("alice"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(inMemoryPort.getWalletByUserId("bob")).isSameAs(bobWallet);
+    }
+
+    @Test
+    void deleteWalletByUserId_whenMissing_returnsFalse() {
+        assertThat(inMemoryPort.deleteWalletByUserId("missing")).isFalse();
     }
 
     @Test

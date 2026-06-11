@@ -118,10 +118,26 @@ class TransactionPersistenceAdapterTest {
     }
 
     @Test
-    void deleteWalletByUserId_delegatesToWalletRepositoryOnly() {
-        adapter.deleteWalletByUserId("user-2");
+    void deleteWalletByUserId_whenWalletExists_deletesAndReturnsTrue() {
+        WalletEntity entity = new WalletEntity();
+        when(walletRepository.findByUserId("user-2")).thenReturn(Optional.of(entity));
 
-        verify(walletRepository).deleteByUserId("user-2");
+        boolean result = adapter.deleteWalletByUserId("user-2");
+
+        assertThat(result).isTrue();
+        verify(walletRepository).findByUserId("user-2");
+        verify(walletRepository).delete(entity);
+        verifyNoInteractions(recordRepository, mapper);
+    }
+
+    @Test
+    void deleteWalletByUserId_whenWalletDoesNotExist_returnsFalse() {
+        when(walletRepository.findByUserId("missing")).thenReturn(Optional.empty());
+
+        boolean result = adapter.deleteWalletByUserId("missing");
+
+        assertThat(result).isFalse();
+        verify(walletRepository).findByUserId("missing");
         verifyNoInteractions(recordRepository, mapper);
     }
 

@@ -62,8 +62,14 @@ public class TransactionPersistenceAdapter implements TransactionPort {
     }
 
     @Override
-    public void deleteWalletByUserId(String userId) {
-        walletRepository.deleteByUserId(userId);
+    public boolean deleteWalletByUserId(String userId) {
+        WalletEntity wallet = walletRepository.findByUserId(userId).orElse(null);
+        if (wallet == null) {
+            return false;
+        }
+
+        walletRepository.delete(wallet);
+        return true;
     }
 
     /**

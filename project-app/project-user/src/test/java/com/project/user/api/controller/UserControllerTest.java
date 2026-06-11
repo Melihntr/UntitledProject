@@ -82,11 +82,14 @@ class UserControllerTest {
     }
 
     @Test
-    void deleteUser_delegatesAndReturnsNoContent() {
-        ResponseEntity<Void> result = controller.deleteUser("u1");
+    void deleteUser_delegatesAndReturnsGenericSuccessResponse() {
+        ResponseEntity<GenericResponse<Void>> result = controller.deleteUser("u1");
 
-        assertThat(result.getStatusCode().value()).isEqualTo(204);
-        assertThat(result.getBody()).isNull();
+        assertThat(result.getStatusCode().value()).isEqualTo(200);
+        assertThat(result.getBody()).isNotNull();
+        assertThat(result.getBody().isSuccess()).isTrue();
+        assertThat(result.getBody().getMessage()).isEqualTo("User deleted successfully.");
+        assertThat(result.getBody().getData()).isNull();
         verify(deleteUserHandler).handle("u1");
     }
 }
