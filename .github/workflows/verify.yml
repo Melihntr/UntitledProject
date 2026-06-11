@@ -7,8 +7,11 @@ on:
   pull_request:
 
 jobs:
-  verify:
+  enterprise-app:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project-app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,5 +23,24 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Run tests and coverage checks
-        run: mvn --batch-mode --no-transfer-progress clean verify
+      - name: Verify Enterprise App
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
+
+  notification-app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project-notification
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Verify Notification App
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify

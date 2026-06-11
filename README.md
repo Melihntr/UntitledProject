@@ -650,16 +650,19 @@ Projede JUnit 5, Mockito ve AssertJ kullanılır. Testler aşağıdaki davranı�
 - HTTP Exchange başarı, tip güvenli hata ve bağlantı hataları
 - Trace ID üretimi ve aktarımı
 
-JaCoCo her modülde yüzde 100 line ve branch coverage eşiğini zorunlu tutar. Doğrulanan mevcut durumda toplam **151 test** başarıyla çalışmaktadır.
+JaCoCo her modülde yüzde 100 line ve branch coverage eşiğini zorunlu tutar. Doğrulanan mevcut durumda toplam **176 test** başarıyla çalışmaktadır.
+
+Enterprise App ve Notification App birbirinden bağımsız Maven projeleridir. Repository kökünde parent
+veya aggregator POM bulunmaz; her uygulama kendi dizinindeki Maven Wrapper ve POM ile doğrulanır.
 
 Testleri ve coverage doğrulamasını çalıştırmak için:
 
 ```powershell
 cd project-app
-mvn clean verify
+.\mvnw.cmd clean verify
 
 cd ..\project-notification
-mvn clean verify
+.\mvnw.cmd clean verify
 ```
 
 JaCoCo raporları:
