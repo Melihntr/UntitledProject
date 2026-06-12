@@ -1,6 +1,6 @@
-# Enterprise Banking System
+# Transaction System
 
-Enterprise Banking System; kullanıcı, cüzdan, para transferi, raporlama ve bildirim süreçlerini örnekleyen Java 21 ve Spring Boot tabanlı bir bankacılık projesidir.
+Transaction System; kullanıcı, cüzdan, para transferi, raporlama ve bildirim süreçlerini örnekleyen Java 21 ve Spring Boot tabanlı bir bankacılık projesidir.
 
 Proje iki uygulamadan oluşur:
 
