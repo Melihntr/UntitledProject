@@ -2,8 +2,11 @@ package com.project.notification.infrastructure.entity;
 
 import com.project.notification.domain.model.NotificationStatus;
 import com.project.notification.domain.model.NotificationType;
+import jakarta.persistence.Basic;
+import jakarta.persistence.FetchType;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -93,5 +96,15 @@ class NotificationEntityTest {
 
         assertThat(entity.getId()).isEqualTo("notification-1");
         assertThat(entity.getCreatedAt()).isEqualTo(createdAt);
+    }
+
+    @Test
+    void messageFieldUsesLazyBasicFetch() throws NoSuchFieldException {
+        Field field = NotificationEntity.class.getDeclaredField("message");
+        Basic basic = field.getAnnotation(Basic.class);
+
+        assertThat(basic).isNotNull();
+        assertThat(basic.fetch()).isEqualTo(FetchType.LAZY);
+        assertThat(basic.optional()).isFalse();
     }
 }

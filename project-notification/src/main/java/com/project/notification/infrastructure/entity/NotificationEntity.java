@@ -39,6 +39,7 @@ public class NotificationEntity extends AuditableEntity {
     @Column(nullable = false, updatable = false)
     private String title;
 
+    @Basic(fetch = FetchType.LAZY, optional = false)
     @Column(nullable = false, length = 1000, updatable = false)
     private String message;
 
