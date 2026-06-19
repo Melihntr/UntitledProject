@@ -1,11 +1,9 @@
 package com.project.user.infrastructure.entity;
 
+import com.project.common.audit.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Database Entity representing the "users" table.
@@ -15,11 +13,12 @@ import java.util.UUID;
 @Table(name = "users")
 @Getter
 @Setter
-public class UserEntity {
+public class UserEntity extends AuditableEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
-    private String id = UUID.randomUUID().toString();
+    private String id;
 
     @Column(name = "username", nullable = false, unique = true)
     private String username;
@@ -27,11 +26,8 @@ public class UserEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "is_user_deleted", nullable = false)
+    private boolean isUserDeleted = false;
 
     /**
      * Used for Optimistic Locking to handle concurrent transactions safely.
@@ -39,11 +35,4 @@ public class UserEntity {
     @Version
     @Column(name = "version")
     private Long version;
-
-    @PrePersist
-    void assignIdIfMissing() {
-        if (id == null || id.isBlank()) {
-            id = UUID.randomUUID().toString();
-        }
-    }
 }

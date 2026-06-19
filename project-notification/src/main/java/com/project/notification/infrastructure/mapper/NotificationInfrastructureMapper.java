@@ -10,6 +10,9 @@ public interface NotificationInfrastructureMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdTraceId", ignore = true)
+    @Mapping(target = "updatedTraceId", ignore = true)
     NotificationEntity toEntity(NotificationModel model);
 
     NotificationModel toModel(NotificationEntity entity);

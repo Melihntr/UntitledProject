@@ -53,37 +53,39 @@ class UserPersistenceAdapterTest {
     void getAllUsers_mapsAllEntities() {
         UserEntity entity = new UserEntity();
         UserModel model = UserModel.builder().id("u1").username("alice").build();
-        when(userRepository.findAll()).thenReturn(List.of(entity));
+        when(userRepository.findAllByIsUserDeletedFalse()).thenReturn(List.of(entity));
         when(userInfrastructureMapper.toModel(entity)).thenReturn(model);
 
         List<UserModel> result = adapter.getAllUsers();
 
         assertThat(result).containsExactly(model);
-        verify(userRepository).findAll();
+        verify(userRepository).findAllByIsUserDeletedFalse();
         verify(userInfrastructureMapper).toModel(entity);
     }
 
     @Test
-    void deleteUserById_whenUserExists_deletesAndReturnsTrue() {
+    void deleteUserById_whenUserExists_softDeletesAndReturnsTrue() {
         UserEntity entity = new UserEntity();
-        when(userRepository.findById("u1")).thenReturn(Optional.of(entity));
+        when(userRepository.findByIdAndIsUserDeletedFalse("u1")).thenReturn(Optional.of(entity));
+        when(userRepository.save(entity)).thenReturn(entity);
 
         boolean result = adapter.deleteUserById("u1");
 
         assertThat(result).isTrue();
-        verify(userRepository).findById("u1");
-        verify(userRepository).delete(entity);
+        assertThat(entity.isUserDeleted()).isTrue();
+        verify(userRepository).findByIdAndIsUserDeletedFalse("u1");
+        verify(userRepository).save(entity);
         verifyNoInteractions(userInfrastructureMapper);
     }
 
     @Test
     void deleteUserById_whenUserDoesNotExist_returnsFalse() {
-        when(userRepository.findById("missing")).thenReturn(Optional.empty());
+        when(userRepository.findByIdAndIsUserDeletedFalse("missing")).thenReturn(Optional.empty());
 
         boolean result = adapter.deleteUserById("missing");
 
         assertThat(result).isFalse();
-        verify(userRepository).findById("missing");
+        verify(userRepository).findByIdAndIsUserDeletedFalse("missing");
         verifyNoInteractions(userInfrastructureMapper);
     }
 }

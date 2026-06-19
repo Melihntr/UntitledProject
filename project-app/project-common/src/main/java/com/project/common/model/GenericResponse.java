@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * Tum API endpoint'lerinin disari dondugu standart JSON sablonu (Util/Wrapper).
  */
@@ -32,6 +34,14 @@ public class GenericResponse<T> {
                 .success(true)
                 .message(message)
                 .data(data)
+                .build();
+    }
+
+    public static <T> GenericResponse<List<T>> successList(List<T> data) {
+        return GenericResponse.<List<T>>builder()
+                .success(true)
+                .message("Operation completed successfully")
+                .data(data == null ? List.of() : data)
                 .build();
     }
 

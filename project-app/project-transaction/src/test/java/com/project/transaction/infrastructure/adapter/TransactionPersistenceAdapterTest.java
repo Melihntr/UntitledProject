@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +55,7 @@ class TransactionPersistenceAdapterTest {
                 .version(1L)
                 .build();
 
-        when(walletRepository.findByUserId("user-1")).thenReturn(Optional.of(entity));
+        when(walletRepository.findByUser_IdAndIsActiveTrue("user-1")).thenReturn(Optional.of(entity));
         when(mapper.toWalletModel(entity)).thenReturn(model);
 
         // Act
@@ -62,19 +63,19 @@ class TransactionPersistenceAdapterTest {
 
         // Assert
         assertThat(result).isSameAs(model);
-        verify(walletRepository).findByUserId("user-1");
+        verify(walletRepository).findByUser_IdAndIsActiveTrue("user-1");
         verify(mapper).toWalletModel(entity);
     }
 
     @Test
     void getWalletByUserId_throws_whenNotFound() {
-        when(walletRepository.findByUserId("missing")).thenReturn(Optional.empty());
+        when(walletRepository.findByUser_IdAndIsActiveTrue("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> adapter.getWalletByUserId("missing"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Wallet not found for user");
 
-        verify(walletRepository).findByUserId("missing");
+        verify(walletRepository).findByUser_IdAndIsActiveTrue("missing");
         verifyNoInteractions(mapper);
     }
 
@@ -121,33 +122,50 @@ class TransactionPersistenceAdapterTest {
     void findWalletById_whenWalletExists_returnsMappedWallet() {
         WalletEntity entity = new WalletEntity();
         WalletModel model = WalletModel.builder().id("wallet-2").userId("user-2").build();
-        when(walletRepository.findById("wallet-2")).thenReturn(Optional.of(entity));
+        when(walletRepository.findByIdAndIsActiveTrue("wallet-2")).thenReturn(Optional.of(entity));
         when(mapper.toWalletModel(entity)).thenReturn(model);
 
         Optional<WalletModel> result = adapter.findWalletById("wallet-2");
 
         assertThat(result).contains(model);
-        verify(walletRepository).findById("wallet-2");
+        verify(walletRepository).findByIdAndIsActiveTrue("wallet-2");
         verify(mapper).toWalletModel(entity);
         verifyNoInteractions(recordRepository);
     }
 
     @Test
     void findWalletById_whenWalletDoesNotExist_returnsEmpty() {
-        when(walletRepository.findById("missing")).thenReturn(Optional.empty());
+        when(walletRepository.findByIdAndIsActiveTrue("missing")).thenReturn(Optional.empty());
 
         Optional<WalletModel> result = adapter.findWalletById("missing");
 
         assertThat(result).isEmpty();
-        verify(walletRepository).findById("missing");
+        verify(walletRepository).findByIdAndIsActiveTrue("missing");
         verifyNoInteractions(recordRepository, mapper);
     }
 
     @Test
-    void deleteWalletById_delegatesToRepository() {
+    void deleteWalletById_marksActiveWalletInactive() {
+        WalletEntity wallet = new WalletEntity();
+        when(walletRepository.findByIdAndIsActiveTrue("wallet-2")).thenReturn(Optional.of(wallet));
+        when(walletRepository.save(wallet)).thenReturn(wallet);
+
         adapter.deleteWalletById("wallet-2");
 
-        verify(walletRepository).deleteById("wallet-2");
+        assertThat(wallet.isActive()).isFalse();
+        verify(walletRepository).findByIdAndIsActiveTrue("wallet-2");
+        verify(walletRepository).save(wallet);
+        verifyNoInteractions(recordRepository, mapper);
+    }
+
+    @Test
+    void deleteWalletById_whenMissing_doesNotSave() {
+        when(walletRepository.findByIdAndIsActiveTrue("missing")).thenReturn(Optional.empty());
+
+        adapter.deleteWalletById("missing");
+
+        verify(walletRepository).findByIdAndIsActiveTrue("missing");
+        verify(walletRepository, never()).save(any());
         verifyNoInteractions(recordRepository, mapper);
     }
 
@@ -211,7 +229,7 @@ class TransactionPersistenceAdapterTest {
 
         Page<TransactionRecordEntity> entityPage = new PageImpl<>(List.of(e1, e2), pageable, 2);
 
-        when(recordRepository.findUserTransactionsWithDateFilter(userId, start, end, pageable))
+        when(recordRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(entityPage);
         when(mapper.toRecordModel(e1)).thenReturn(m1);
         when(mapper.toRecordModel(e2)).thenReturn(m2);
@@ -222,21 +240,34 @@ class TransactionPersistenceAdapterTest {
         assertThat(result.getTotalElements()).isEqualTo(2);
         assertThat(result.getContent()).containsExactly(m1, m2);
 
-        verify(recordRepository).findUserTransactionsWithDateFilter(userId, start, end, pageable);
+        verify(recordRepository).findAll(any(Specification.class), eq(pageable));
         verify(mapper).toRecordModel(e1);
         verify(mapper).toRecordModel(e2);
     }
 
     @Test
-    void getSuspiciousTransfers_delegatesToRepository() {
-        List<Object[]> expected = List.of(new Object[]{"a", 1L}, new Object[]{"b", 2L});
-        when(recordRepository.findSuspiciousTransfersWithSelfJoin()).thenReturn(expected);
+    void getSuspiciousTransfers_buildsPairsForHighValueTransactionsFromSameSender() {
+        TransactionRecordEntity first = record("tx-1", "alice", 6000.0);
+        TransactionRecordEntity second = record("tx-2", "alice", 7000.0);
+        TransactionRecordEntity otherSender = record("tx-3", "bob", 8000.0);
+        when(recordRepository.findAllByAmountGreaterThan(5000.0))
+                .thenReturn(List.of(first, second, otherSender));
 
         List<Object[]> result = adapter.getSuspiciousTransfers();
 
-        assertThat(result).isSameAs(expected);
-        verify(recordRepository).findSuspiciousTransfersWithSelfJoin();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).containsExactly("tx-1", 6000.0, "tx-2", 7000.0);
+        assertThat(result.get(1)).containsExactly("tx-2", 7000.0, "tx-1", 6000.0);
+        verify(recordRepository).findAllByAmountGreaterThan(5000.0);
         verifyNoMoreInteractions(recordRepository);
         verifyNoInteractions(mapper);
+    }
+
+    private TransactionRecordEntity record(String id, String senderUserId, double amount) {
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+        entity.setId(id);
+        entity.setSenderUserId(senderUserId);
+        entity.setAmount(amount);
+        return entity;
     }
 }

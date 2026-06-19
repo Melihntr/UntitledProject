@@ -7,6 +7,7 @@ import com.project.transaction.infrastructure.entity.TransactionRecordEntity;
 import com.project.transaction.infrastructure.entity.WalletEntity;
 import com.project.transaction.infrastructure.mapper.TransactionInfrastructureMapper;
 import com.project.transaction.infrastructure.repository.TransactionRecordRepository;
+import com.project.transaction.infrastructure.repository.TransactionRecordSpecifications;
 import com.project.transaction.infrastructure.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,7 +41,7 @@ public class TransactionPersistenceAdapter implements TransactionPort {
      */
     @Override
     public WalletModel getWalletByUserId(String userId) {
-        WalletEntity entity = walletRepository.findByUserId(userId)
+        WalletEntity entity = walletRepository.findByUser_IdAndIsActiveTrue(userId)
                 // Note: In an enterprise environment, this is an excellent place to throw a custom 
                 // BusinessException (e.g., WalletNotFoundException) that maps to a 404 HTTP status.
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user: " + userId));
@@ -64,12 +65,15 @@ public class TransactionPersistenceAdapter implements TransactionPort {
 
     @Override
     public Optional<WalletModel> findWalletById(String walletId) {
-        return walletRepository.findById(walletId).map(mapper::toWalletModel);
+        return walletRepository.findByIdAndIsActiveTrue(walletId).map(mapper::toWalletModel);
     }
 
     @Override
     public void deleteWalletById(String walletId) {
-        walletRepository.deleteById(walletId);
+        walletRepository.findByIdAndIsActiveTrue(walletId).ifPresent(wallet -> {
+            wallet.setActive(false);
+            walletRepository.save(wallet);
+        });
     }
 
     /**
@@ -100,7 +104,9 @@ public class TransactionPersistenceAdapter implements TransactionPort {
             String userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
         
         // Fetch entities from the repository and map them sequentially to domain models
-        return recordRepository.findUserTransactionsWithDateFilter(userId, startDate, endDate, pageable)
+        return recordRepository.findAll(
+                        TransactionRecordSpecifications.historyForUser(userId, startDate, endDate),
+                        pageable)
                 .map(mapper::toRecordModel);
     }
 
@@ -111,6 +117,12 @@ public class TransactionPersistenceAdapter implements TransactionPort {
      */
     @Override
     public List<Object[]> getSuspiciousTransfers() {
-        return recordRepository.findSuspiciousTransfersWithSelfJoin();
+        List<TransactionRecordEntity> highValueRecords = recordRepository.findAllByAmountGreaterThan(5000.0);
+        return highValueRecords.stream()
+                .flatMap(first -> highValueRecords.stream()
+                        .filter(second -> !first.getId().equals(second.getId()))
+                        .filter(second -> first.getSenderUserId().equals(second.getSenderUserId()))
+                        .map(second -> new Object[]{first.getId(), first.getAmount(), second.getId(), second.getAmount()}))
+                .toList();
     }
 }

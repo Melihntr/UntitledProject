@@ -21,8 +21,8 @@ class NotificationInfrastructureMapperTest {
     void mapsDomainModelToNewPersistenceEntity() {
         NotificationEntity entity = mapper.toEntity(model());
 
-        assertThat(entity.getId()).isNotBlank();
-        assertThat(entity.getCreatedAt()).isNotNull();
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.getCreatedAt()).isNull();
         assertThat(entity.getEventId()).isEqualTo("tx-1");
         assertThat(entity.getType()).isEqualTo(NotificationType.TRANSFER_RECEIVED);
         assertThat(entity.getSourceService()).isEqualTo("enterprise-app");

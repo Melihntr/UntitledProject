@@ -66,7 +66,9 @@ class TransactionInfrastructureMapperTest {
         TransactionRecordEntity entity = mapper.toRecordEntity(model);
 
         assertThat(entity).isNotNull();
-        assertThat(entity.getId()).isEqualTo("tx-1");
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.getSender()).isNull();
+        assertThat(entity.getReceiver()).isNull();
         assertThat(entity.getSenderUserId()).isEqualTo("alice");
         assertThat(entity.getReceiverUserId()).isEqualTo("bob");
         assertThat(entity.getAmount()).isEqualTo(10.0);
@@ -76,7 +78,7 @@ class TransactionInfrastructureMapperTest {
         // And back
         TransactionRecordModel mappedBack = mapper.toRecordModel(entity);
         assertThat(mappedBack).isNotNull();
-        assertThat(mappedBack.getId()).isEqualTo("tx-1");
+        assertThat(mappedBack.getId()).isNull();
         assertThat(mappedBack.getSenderUserId()).isEqualTo("alice");
         assertThat(mappedBack.getReceiverUserId()).isEqualTo("bob");
         assertThat(mappedBack.getAmount()).isEqualTo(10.0);

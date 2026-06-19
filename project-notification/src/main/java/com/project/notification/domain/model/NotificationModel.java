@@ -1,5 +1,7 @@
 package com.project.notification.domain.model;
 
+import com.project.notification.domain.usecase.RecordNotificationInput;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

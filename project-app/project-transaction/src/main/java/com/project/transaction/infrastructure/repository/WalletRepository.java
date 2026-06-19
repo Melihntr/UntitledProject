@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * Spring Data JPA repository for managing {@link WalletEntity} persistence.
@@ -22,5 +23,9 @@ public interface WalletRepository extends JpaRepository<WalletEntity, String> {
      * if the user does not possess a wallet yet. Returning an Optional 
      * enforces safe null-handling in the adapter layer.
      */
-    Optional<WalletEntity> findByUserId(String userId);
+    Optional<WalletEntity> findByUser_IdAndIsActiveTrue(String userId);
+
+    Optional<WalletEntity> findByIdAndIsActiveTrue(String id);
+
+    List<WalletEntity> findAllByIsActiveTrue();
 }

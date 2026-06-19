@@ -10,9 +10,11 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class WalletEventListenerTest {
@@ -30,18 +32,22 @@ class WalletEventListenerTest {
     void onUserCreated_persistsWallet_withExpectedInitialValues() {
         // Arrange
         String newUserId = "user-abc-123";
+        when(walletRepository.save(org.mockito.ArgumentMatchers.any(WalletEntity.class)))
+                .thenAnswer(invocation -> {
+                    WalletEntity wallet = invocation.getArgument(0);
+                    wallet.setId("generated-wallet-id");
+                    return wallet;
+                });
 
         // Act
-        listener.onUserCreated(new UserCreatedEvent(newUserId));
+        listener.onUserCreated(new UserCreatedEvent(newUserId, "trace-event"));
 
         // Assert
         verify(walletRepository).save(walletCaptor.capture());
         WalletEntity saved = walletCaptor.getValue();
 
         assertThat(saved).isNotNull();
-        // id must be generated
-        assertThat(saved.getId()).isNotNull();
-        assertThat(saved.getId()).isNotBlank();
+        assertThat(saved.getId()).isEqualTo("generated-wallet-id");
 
         // userId must match the event payload
         assertThat(saved.getUserId()).isEqualTo(newUserId);
@@ -51,5 +57,18 @@ class WalletEventListenerTest {
 
         // initial version must be 0L
         assertThat(saved.getVersion()).isEqualTo(0L);
+        assertThat(MDC.get("traceId")).isNull();
+    }
+
+    @Test
+    void onUserCreated_restoresPreviousTraceId() {
+        MDC.put("traceId", "trace-parent");
+        when(walletRepository.save(org.mockito.ArgumentMatchers.any(WalletEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        listener.onUserCreated(new UserCreatedEvent("user-1", "trace-event"));
+
+        assertThat(MDC.get("traceId")).isEqualTo("trace-parent");
+        MDC.clear();
     }
 }

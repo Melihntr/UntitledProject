@@ -1,47 +1,54 @@
 package com.project.common.filter;
 
 import com.project.common.tracing.TraceIdProvider;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.MDC;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class TraceIdFilter extends OncePerRequestFilter {
 
-    private static final String TRACE_ID_HEADER = "X-Trace-Id";
-    private static final String TRACE_ID_MDC_KEY = "traceId";
+    public static final String TRACE_ID_HEADER = "X-Trace-Id";
+    public static final String TRACE_ID_MDC_KEY = "traceId";
     private final TraceIdProvider traceIdProvider;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
-        // 1. İsteğin Header'ından Trace ID'yi al. Yoksa yeni bir UUID üret.
         String traceId = request.getHeader(TRACE_ID_HEADER);
         if (traceId == null || traceId.isEmpty()) {
             traceId = traceIdProvider.currentTraceIdOrNew();
         }
 
-        // 2. (Bu sayede @Slf4j loglarının hepsine otomatik basılabilir)
         MDC.put(TRACE_ID_MDC_KEY, traceId);
-
-        // 3. Response Header'ına da ekle ki Client (Frontend) bu ID'yi bilsin
         response.setHeader(TRACE_ID_HEADER, traceId);
+        long startedAt = System.nanoTime();
+        log.info("request.received method={} path={}", request.getMethod(), request.getRequestURI());
 
         try {
-            // İsteği Controller'a ilet
             filterChain.doFilter(request, response);
+            log.info("request.completed method={} path={} status={} durationMs={}",
+                    request.getMethod(), request.getRequestURI(), response.getStatus(), elapsedMillis(startedAt));
+        } catch (IOException | ServletException | RuntimeException exception) {
+            log.error("request.failed method={} path={} status={} durationMs={}",
+                    request.getMethod(), request.getRequestURI(), response.getStatus(), elapsedMillis(startedAt), exception);
+            throw exception;
         } finally {
-            // İşlem bitince MDC'yi temizle (Memory leak olmaması için önemli)
             MDC.remove(TRACE_ID_MDC_KEY);
         }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 }

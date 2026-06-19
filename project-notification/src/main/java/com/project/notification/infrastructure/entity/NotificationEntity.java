@@ -1,27 +1,27 @@
 package com.project.notification.infrastructure.entity;
 
+import com.project.notification.audit.AuditableEntity;
 import com.project.notification.domain.model.NotificationStatus;
 import com.project.notification.domain.model.NotificationType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "notifications")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class NotificationEntity {
+public class NotificationEntity extends AuditableEntity {
 
     @Id
-    private String id = UUID.randomUUID().toString();
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private String id;
 
     @Column(name = "event_id", nullable = false, unique = true, updatable = false)
     private String eventId;
@@ -55,19 +55,37 @@ public class NotificationEntity {
     @Column(nullable = false)
     private NotificationStatus status = NotificationStatus.RECORDED;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    public NotificationEntity(
+            String id,
+            String eventId,
+            NotificationType type,
+            String sourceService,
+            String recipientId,
+            String title,
+            String message,
+            String referenceId,
+            BigDecimal amount,
+            String currency,
+            NotificationStatus status,
+            LocalDateTime createdAt) {
+        this.id = id;
+        this.eventId = eventId;
+        this.type = type;
+        this.sourceService = sourceService;
+        this.recipientId = recipientId;
+        this.title = title;
+        this.message = message;
+        this.referenceId = referenceId;
+        this.amount = amount;
+        this.currency = currency;
+        this.status = status;
+        setCreatedAt(createdAt);
+    }
 
     @PrePersist
     void assignDefaultsIfMissing() {
-        if (id == null || id.isBlank()) {
-            id = UUID.randomUUID().toString();
-        }
         if (status == null) {
             status = NotificationStatus.RECORDED;
-        }
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
         }
     }
 }

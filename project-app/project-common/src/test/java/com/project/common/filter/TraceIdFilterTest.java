@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,5 +65,20 @@ class TraceIdFilterTest {
 
         verify(response).setHeader("X-Trace-Id", "generated-trace");
         verify(chain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_clearsMdcWhenRequestFails() throws Exception {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain chain = mock(FilterChain.class);
+        when(request.getHeader("X-Trace-Id")).thenReturn("trace-failure");
+        org.mockito.Mockito.doThrow(new jakarta.servlet.ServletException("boom"))
+                .when(chain).doFilter(request, response);
+
+        assertThatThrownBy(() -> filter.doFilterInternal(request, response, chain))
+                .isInstanceOf(jakarta.servlet.ServletException.class);
+
+        assertThat(MDC.get("traceId")).isNull();
     }
 }

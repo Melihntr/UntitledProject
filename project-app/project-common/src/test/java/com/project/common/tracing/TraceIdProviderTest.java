@@ -24,6 +24,9 @@ class TraceIdProviderTest {
 
     @Test
     void currentTraceIdOrNew_generatesTraceIdWhenMissing() {
-        assertThat(traceIdProvider.currentTraceIdOrNew()).isNotBlank();
+        String traceId = traceIdProvider.currentTraceIdOrNew();
+
+        assertThat(traceId).isNotBlank();
+        assertThat(MDC.get("traceId")).isEqualTo(traceId);
     }
 }

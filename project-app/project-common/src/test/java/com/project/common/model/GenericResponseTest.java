@@ -2,6 +2,8 @@ package com.project.common.model;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GenericResponseTest {
@@ -47,5 +49,15 @@ class GenericResponseTest {
         assertThat(allArgs.isSuccess()).isFalse();
         assertThat(allArgs.getMessage()).isEqualTo("no");
         assertThat(noArgs.getData()).isNull();
+    }
+
+    @Test
+    void successListConvertsNullToEmptyListAndKeepsExistingList() {
+        GenericResponse<List<String>> empty = GenericResponse.successList(null);
+        List<String> values = List.of("value");
+        GenericResponse<List<String>> populated = GenericResponse.successList(values);
+
+        assertThat(empty.getData()).isEmpty();
+        assertThat(populated.getData()).isSameAs(values);
     }
 }

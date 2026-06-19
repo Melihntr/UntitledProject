@@ -42,7 +42,7 @@ Kod tabanı; katmanlar arası bağımlılıkları portlar üzerinden sınırland
 - Servisler arasında `X-Trace-Id` aktarımı
 - Tip güvenli başarı ve hata cevapları
 - Bean Validation, merkezi exception handler ve SLF4J loglama
-- Entity içinde UUID üretimi ve optimistic locking
+- Persistence tarafından üretilen UUID kimlikleri, entity ilişkileri ve optimistic locking
 - Tüm modüllerde yüzde 100 line ve branch coverage eşiği
 
 ## Mimari Genel Bakış
@@ -76,7 +76,7 @@ Bu yaklaşımın başlıca sonuçları:
 - İş akışları handler sınıflarında yürütülür.
 - Domain katmanı, JPA repository veya HTTP client gibi altyapı detaylarına doğrudan bağımlı değildir.
 - Altyapı adapterları domain tarafından tanımlanan portları uygular.
-- Entity kimlikleri entity tarafından üretilir; UUID üretimi listener veya controller katmanına sızmaz.
+- Entity kimlikleri `@GeneratedValue(strategy = GenerationType.UUID)` ile persistence tarafından üretilir; ID üretimi listener, controller veya use case katmanına sızmaz.
 - Bildirim servisine erişim, işlem use case'inden `NotificationPort` aracılığıyla yapılır.
 
 ## Modül Yapısı
@@ -155,24 +155,27 @@ Bağımsız Notification App'tir:
 Notification App de Enterprise App ile aynı port-adapter sınırlarını izler:
 
 ```text
-api/
-├── controller/    HTTP endpointleri
-├── dto/           Dış servis sözleşmeleri
-└── mapper/        API DTO <-> domain dönüşümleri
 domain/
-├── model/         Altyapıdan bağımsız bildirim modelleri
-├── port/          Persistence sözleşmesi
-└── usecase/       İdempotent bildirim kayıt akışı ve iş logları
+├── model/                 Altyapıdan bağımsız iş modelleri
+├── port/                  Dış dünya ve persistence sözleşmeleri
+├── handler/               Tek bir iş akışını yürüten handler implementasyonları
+└── usecase/               Handler giriş sözleşmeleri ve input modelleri
 infrastructure/
-├── adapter/       Domain portunun JPA uygulaması
-├── entity/        Persistence entity'leri
-├── mapper/        Domain <-> entity dönüşümleri
-└── repository/    Spring Data repository'leri
+├── api/
+│   ├── controller/        HTTP endpointleri
+│   ├── dto/               Dış servis sözleşmeleri
+│   └── mapper/            API DTO <-> domain dönüşümleri
+├── adapter/               Domain portlarının teknik uygulamaları
+├── entity/                Persistence entity'leri
+├── mapper/                Domain <-> entity dönüşümleri
+└── repository/            Spring Data repository'leri
 ```
 
 `RecordNotificationHandler` yalnızca domain modelleri ve `NotificationPort` ile çalışır. Concurrent
 unique-key yarışının teknik çözümü `NotificationPersistenceAdapter` içinde tutulur; controller ve
 use case JPA entity veya repository detaylarını bilmez.
+
+Paket sınırı tüm bounded contextlerde aynıdır: HTTP'ye bağlı `api` sınıfları `infrastructure.api` altında, iş akışını yürüten sınıflar `domain.handler` altında ve handler giriş sözleşmeleri `domain.usecase` altında tutulur. Böylece domain modeli taşıma protokolünden, handler implementasyonları da input tanımlarının fiziksel konumundan ayrılır.
 
 ## Katmanlar ve Sorumluluklar
 
@@ -208,7 +211,7 @@ Domain katmanı:
 - Port arayüzlerini
 - Domain eventlerini
 
-içerir. Entity kimlikleri oluşturulurken UUID üretimi entity sınırları içinde gerçekleşir. JPA yükleme ve persistence yaşam döngüsü için `@PrePersist` koruması da bulunur.
+içerir. Yeni entity kimlikleri uygulama kodunda atanmaz; persistence işlemi sırasında `@GeneratedValue(strategy = GenerationType.UUID)` ile üretilir.
 
 Başlıca portlar:
 
@@ -262,14 +265,14 @@ Akış özellikleri:
 - Event publisher controller yerine service/use case katmanında kullanılır.
 - Event, aynı Enterprise App süreci içinde Spring Event ile senkron işlenir.
 - Yeni cüzdan başlangıç bakiyesiyle oluşturulur.
-- Kullanıcı ve cüzdan UUID değerleri entity tarafından üretilir.
+- Kullanıcı ve cüzdan UUID değerleri persistence tarafından üretilir.
 
 ### Transfer ve Bildirim
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant SecurityAspect
+    participant RequestPipeline
     participant TransactionController
     participant TransferHandler
     participant TransactionPort
@@ -277,8 +280,8 @@ sequenceDiagram
     participant NotificationApp
     participant NotificationDb
 
-    Client->>SecurityAspect: X-User-Id + transfer request
-    SecurityAspect->>TransactionController: validated request
+    Client->>RequestPipeline: X-User-Id + transfer request
+    RequestPipeline->>TransactionController: traced request
     TransactionController->>TransferHandler: execute(request)
     TransferHandler->>TransactionPort: load wallets
     TransferHandler->>TransferHandler: validate and update balances
@@ -310,15 +313,15 @@ Varsayılan adres: `http://localhost:8080`
 | Metot | Endpoint | Açıklama | Gerekli Header |
 |---|---|---|---|
 | `POST` | `/api/v1/users` | Kullanıcı oluşturur | - |
-| `GET` | `/api/v1/users/basic-list` | Temel kullanıcı listesini döner | - |
-| `GET` | `/api/v1/admin/reports/user-wallet-summary` | Kullanıcı-cüzdan özetini döner | - |
-| `GET` | `/api/v1/admin/reports/active-transfers` | Aktif transfer raporunu döner | - |
-| `GET` | `/api/v1/admin/reports/health/orphan-wallets` | Sahipsiz cüzdanları döner | - |
+| `GET` | `/api/v1/users/basic-list` | Temel kullanıcı listesini döner | `X-User-Id` |
+| `GET` | `/api/v1/admin/reports/user-wallet-summary` | Kullanıcı-cüzdan özetini döner | `X-User-Id` |
+| `GET` | `/api/v1/admin/reports/active-transfers` | Aktif transfer raporunu döner | `X-User-Id` |
+| `GET` | `/api/v1/admin/reports/health/orphan-wallets` | Sahipsiz cüzdanları döner | `X-User-Id` |
 | `POST` | `/api/v1/transactions/transfer` | Para transferi yapar | `X-User-Id` |
 | `GET` | `/api/v1/transactions/history` | Kullanıcının işlem geçmişini döner | `X-User-Id` |
 | `GET` | `/api/v1/transactions/fraud-report` | Şüpheli transfer raporunu döner | `X-User-Id`, `X-Role: ADMIN` |
-| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını siler; bulunamazsa `404` döner | - |
-| `DELETE` | `/api/v1/transactions/wallets/{walletId}` | Wallet ID ile yalnızca ilgili cüzdanı siler; sahiplik kontrolü yapar | `X-User-Id` |
+| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını pasifleştirir; bulunamazsa `404` döner | - |
+| `DELETE` | `/api/v1/transactions/wallets/{walletId}` | Wallet ID ile yalnızca ilgili cüzdanı pasifleştirir; sahiplik kontrolü yapar | `X-User-Id` |
 
 #### Kullanıcı Oluşturma
 
@@ -365,6 +368,8 @@ X-User-Id: user-id
 
 Header'daki kullanıcı yalnızca kendi işlem geçmişini görüntüleyebilir.
 
+İşlem geçmişi pagination sorgusu `TransactionRecordSpecifications.historyForUser(...)` ile JPA Criteria API üzerinden oluşturulur. Repository, `JpaSpecificationExecutor` kullanarak Criteria filtresi ile `Pageable` bilgisini birlikte uygular.
+
 #### User ve Wallet Silme Cevapları
 
 Başarılı silme işlemleri HTTP `200 OK` ve standart başarılı cevap döner:
@@ -395,6 +400,10 @@ X-User-Id: wallet-owner-user-id
 ```
 
 Wallet mevcut olsa bile `X-User-Id` wallet sahibine ait değilse HTTP `403 Forbidden` ve başarısız `GenericResponse` döner. Sahiplik kontrolü controller yerine `DeleteWalletHandler` içinde uygulanır.
+
+Her iki delete endpoint'i de soft delete uygular. Kayıtlar fiziksel olarak silinmez. Kullanıcı ancak `is_user_deleted=true` olduğunda silinmiş kabul edilir; alanın entity varsayılanı `false` değeridir. Cüzdan için varsayılanı `true` olan `is_active` alanı silmede `false` yapılır. Repository metotları Spring Data derived query isimleriyle silinmemiş kullanıcıları ve aktif cüzdanları döndürür.
+
+Fraud report sorgusunda şüpheli kayıt bulunmaması veya persistence katmanının beklenmedik biçimde `null` döndürmesi halinde başarılı `GenericResponse` içindeki `data` alanı `null` yerine `[]` olur.
 
 ### Notification App
 
@@ -501,36 +510,59 @@ Mevcut iş kuralına göre notification gönderimi **best effort** çalışır: 
 
 Varsayılan bağlantı: `jdbc:h2:mem:enterprisedb`
 
+`WalletEntity`, sahibine `@OneToOne`; `TransactionRecordEntity` ise gönderen ve alıcı kullanıcılarına `@ManyToOne` ilişkileriyle bağlıdır. Bir kullanıcı yalnızca bir wallet sahibi olabildiği için `wallets.user_id` unique tutulur. Aynı kullanıcı çok sayıda işlemin göndereni veya alıcısı olabildiği için transaction ilişkileri bire bir değil, çoktan bire şeklindedir.
+
+İlişkiler `WalletEntity.java` ve `TransactionRecordEntity.java` dosyalarında tanımlıdır ve veritabanında isimlendirilmiş foreign key constraint'leri üretir. Cascade delete kullanılmaz; user ve wallet silme operasyonları ilgili kaydı soft delete ile pasifleştirir.
+
+Tüm entity ilişkileri açıkça `FetchType.LAZY` kullanır. İlişkili veri yalnızca transaction/persistence sınırı içinde ihtiyaç duyulduğunda yüklenir ve iki uygulamada da `spring.jpa.open-in-view=false` olduğu için web response oluşturulurken kontrolsüz lazy query çalıştırılmaz. Projede entity subtype kalıtımı bulunmadığından `@Inheritance(SINGLE_TABLE)` ve `@DiscriminatorColumn` kullanılmaz. Ortak audit alanları yeni tablo veya discriminator üretmeyen `@MappedSuperclass` üzerinden paylaşılır.
+
+Repository katmanında elle JPQL veya native SQL yazılmaz. Basit filtreler Spring Data derived query metotlarına, dinamik ve sayfalı işlem geçmişi filtresi ise `TransactionRecordSpecifications.java` içindeki JPA Criteria/Specification tanımına devredilir.
+
+Enterprise entityleri `project-common` içindeki `AuditableEntity`, bağımsız Notification App entitysi ise kendi `AuditableEntity` sınıfını genişletir. Her persistence create/update işleminde aşağıdaki alanlar otomatik tutulur:
+
+- `created_at`
+- `updated_at`
+- `created_trace_id`
+- `updated_trace_id`
+
 #### `users`
 
 | Alan | Açıklama |
 |---|---|
-| `id` | Entity tarafından üretilen UUID |
+| `id` | Persistence tarafından üretilen UUID |
 | `username` | Unique kullanıcı adı |
 | `email` | Unique e-posta |
-| `is_active` | Kullanıcı aktiflik durumu |
+| `is_user_deleted` | Soft delete durumu; entity varsayılanı `false`, yalnızca `true` ise kullanıcı silinmiştir |
 | `created_at` | Oluşturulma zamanı |
+| `updated_at` | Son güncellenme zamanı |
+| `created_trace_id` | Kaydı oluşturan isteğin trace ID'si |
+| `updated_trace_id` | Son güncelleme isteğinin trace ID'si |
 | `version` | Optimistic locking sürümü |
 
 #### `wallets`
 
 | Alan | Açıklama |
 |---|---|
-| `id` | Entity tarafından üretilen UUID |
-| `user_id` | Unique kullanıcı ilişkisi |
+| `id` | Persistence tarafından üretilen UUID |
+| `user_id` | `WalletEntity.user` üzerinden kurulan unique kullanıcı ilişkisi |
 | `balance` | Cüzdan bakiyesi |
+| `is_active` | Cüzdan aktiflik durumu; entity varsayılanı `true` |
+| `created_at`, `updated_at` | Audit zamanları |
+| `created_trace_id`, `updated_trace_id` | Audit trace ID'leri |
 | `version` | Optimistic locking sürümü |
 
 #### `transaction_records`
 
 | Alan | Açıklama |
 |---|---|
-| `id` | Entity tarafından üretilen UUID |
-| `sender_user_id` | Gönderen kullanıcı |
-| `receiver_user_id` | Alıcı kullanıcı |
+| `id` | Persistence tarafından üretilen UUID |
+| `sender_user_id` | `TransactionRecordEntity.sender` üzerinden gönderen kullanıcı ilişkisi |
+| `receiver_user_id` | `TransactionRecordEntity.receiver` üzerinden alıcı kullanıcı ilişkisi |
 | `amount` | Transfer tutarı |
 | `transaction_date` | İşlem zamanı |
 | `status` | İşlem durumu |
+| `created_at`, `updated_at` | Audit zamanları |
+| `created_trace_id`, `updated_trace_id` | Audit trace ID'leri |
 
 ### Notification App Veri Tabanı
 
@@ -540,7 +572,7 @@ Varsayılan bağlantı: `jdbc:h2:mem:notificationdb`
 
 | Alan | Açıklama |
 |---|---|
-| `id` | Entity tarafından üretilen UUID |
+| `id` | Persistence tarafından üretilen UUID |
 | `event_id` | Unique ve değiştirilemez idempotency anahtarı |
 | `type` | Bildirim türü |
 | `source_service` | Kaynak servis |
@@ -552,12 +584,15 @@ Varsayılan bağlantı: `jdbc:h2:mem:notificationdb`
 | `currency` | Üç karakterli para birimi |
 | `status` | Bildirim durumu |
 | `created_at` | Oluşturulma zamanı |
+| `updated_at` | Son güncellenme zamanı |
+| `created_trace_id` | Kaydı oluşturan uçtan uca trace ID |
+| `updated_trace_id` | Son güncellemenin uçtan uca trace ID'si |
 
 ## Güvenlik
 
 Mevcut güvenlik modeli örnek ve geliştirme amaçlıdır.
 
-`SecurityHeaderAspect`, transaction controller çağrılarında `X-User-Id` header'ını zorunlu tutar. `TransactionAccessValidator` ise:
+`UserHeaderInterceptor`, `/api/**` altındaki tüm `GET` isteklerinde `X-User-Id` header'ını tek noktadan zorunlu tutar ve değeri request attribute olarak saklar. `CurrentUserProvider`, business erişim kontrolleri için kullanıcı kimliğini yalnızca bu request attribute'tan okur. MDC'ye yazılan `userId` sadece log korelasyonu içindir ve güvenlik bilgisinin kaynağı değildir. `TransactionAccessValidator` ise:
 
 - Transfer göndereninin header kullanıcısıyla aynı olduğunu
 - Kullanıcının yalnızca kendi işlem geçmişine eriştiğini
@@ -623,8 +658,11 @@ Her iki uygulama da SLF4J kullanır. Trace filtreleri:
 1. İstekte gelen `X-Trace-Id` değerini kullanır.
 2. Header yoksa yeni trace ID üretir.
 3. Trace ID'yi MDC içine ekler.
-4. Servisler arası istekte aynı trace ID'yi aktarır.
-5. Cevap header'ında trace ID'yi döner.
+4. `request.received`, `request.completed` veya `request.failed` olaylarını aynı ID ve süre bilgisiyle loglar.
+5. `UserCreatedEvent` gibi uygulama içi eventlerde aynı trace ID'yi payload ile taşır.
+6. Notification HTTP Exchange isteğinde aynı ID'yi `X-Trace-Id` header'ıyla diğer uygulamaya aktarır.
+7. Persistence audit alanlarına create/update işleminin trace ID'sini yazar.
+8. Cevap header'ında trace ID'yi döner ve request tamamlandığında MDC'yi temizler.
 
 Notification akışında başarı, duplicate kayıt, validation hatası, persistence hatası, HTTP hatası ve erişim hatası ayrı log olaylarıyla kapsanır. Başlıca olay aileleri:
 
@@ -643,14 +681,14 @@ Projede JUnit 5, Mockito ve AssertJ kullanılır. Testler aşağıdaki davranı�
 - Controller request/response sözleşmeleri
 - Validation ve exception handler davranışları
 - Use case başarı ve hata senaryoları
-- Domain entity yaşam döngüsü ve UUID üretimi
+- Persistence tabanlı UUID üretimi ve entity ilişkileri
 - Persistence ve event adapterları
 - Güvenlik header ve rol kontrolleri
 - Notification idempotency ve eş zamanlı kayıt yarışı
 - HTTP Exchange başarı, tip güvenli hata ve bağlantı hataları
 - Trace ID üretimi ve aktarımı
 
-JaCoCo her modülde yüzde 100 line ve branch coverage eşiğini zorunlu tutar. Doğrulanan mevcut durumda toplam **176 test** başarıyla çalışmaktadır.
+JaCoCo her modülde yüzde 100 line ve branch coverage eşiğini zorunlu tutar. Doğrulanan mevcut durumda toplam **185 test** başarıyla çalışmaktadır.
 
 Enterprise App ve Notification App birbirinden bağımsız Maven projeleridir. Repository kökünde parent
 veya aggregator POM bulunmaz; her uygulama kendi dizinindeki Maven Wrapper ve POM ile doğrulanır.

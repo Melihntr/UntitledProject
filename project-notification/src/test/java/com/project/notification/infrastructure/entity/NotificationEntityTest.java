@@ -46,14 +46,14 @@ class NotificationEntityTest {
         entity.setAmount(BigDecimal.TEN);
         entity.setCurrency("TRY");
 
-        assertThat(entity.getId()).isNotBlank();
+        assertThat(entity.getId()).isNull();
         assertThat(entity.getStatus()).isEqualTo(NotificationStatus.RECORDED);
-        assertThat(entity.getCreatedAt()).isNotNull();
+        assertThat(entity.getCreatedAt()).isNull();
         assertThat(entity.getEventId()).isEqualTo("tx-1");
     }
 
     @Test
-    void assignDefaultsIfMissing_generatesAllMissingDefaults() {
+    void assignDefaultsIfMissing_generatesNonIdDefaults() {
         NotificationEntity entity = new NotificationEntity();
         entity.setId(null);
         entity.setStatus(null);
@@ -61,13 +61,13 @@ class NotificationEntityTest {
 
         entity.assignDefaultsIfMissing();
 
-        assertThat(entity.getId()).isNotBlank();
+        assertThat(entity.getId()).isNull();
         assertThat(entity.getStatus()).isEqualTo(NotificationStatus.RECORDED);
-        assertThat(entity.getCreatedAt()).isNotNull();
+        assertThat(entity.getCreatedAt()).isNull();
     }
 
     @Test
-    void assignDefaultsIfMissing_handlesBlankIdAndKeepsExistingStatusAndTimestamp() {
+    void assignDefaultsIfMissing_keepsIdStatusAndTimestamp() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 6, 9, 15, 0);
         NotificationEntity entity = new NotificationEntity();
         entity.setId(" ");
@@ -76,7 +76,7 @@ class NotificationEntityTest {
 
         entity.assignDefaultsIfMissing();
 
-        assertThat(entity.getId()).isNotBlank();
+        assertThat(entity.getId()).isBlank();
         assertThat(entity.getStatus()).isEqualTo(NotificationStatus.RECORDED);
         assertThat(entity.getCreatedAt()).isEqualTo(createdAt);
     }

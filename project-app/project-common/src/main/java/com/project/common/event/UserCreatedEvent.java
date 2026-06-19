@@ -8,5 +8,5 @@ package com.project.common.event;
  *
  * @param userId The unique identifier of the newly created user.
  */
-public record UserCreatedEvent(String userId) {
+public record UserCreatedEvent(String userId, String traceId) {
 }

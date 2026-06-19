@@ -13,6 +13,12 @@ public class TraceIdProvider {
 
     public String currentTraceIdOrNew() {
         String traceId = MDC.get(TRACE_ID_MDC_KEY);
-        return StringUtils.hasText(traceId) ? traceId : UUID.randomUUID().toString();
+        if (StringUtils.hasText(traceId)) {
+            return traceId;
+        }
+
+        String generatedTraceId = UUID.randomUUID().toString();
+        MDC.put(TRACE_ID_MDC_KEY, generatedTraceId);
+        return generatedTraceId;
     }
 }

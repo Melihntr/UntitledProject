@@ -5,6 +5,7 @@ import com.project.transaction.domain.model.WalletModel;
 import com.project.transaction.infrastructure.entity.TransactionRecordEntity;
 import com.project.transaction.infrastructure.entity.WalletEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 /**
  * MapStruct mapper responsible for data transformation between the Core Domain layer 
@@ -23,6 +24,11 @@ public interface TransactionInfrastructureMapper {
      * @param model The domain model containing the active business state.
      * @return The mapped JPA entity ready for persistence.
      */
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdTraceId", ignore = true)
+    @Mapping(target = "updatedTraceId", ignore = true)
     WalletEntity toWalletEntity(WalletModel model);
 
     /**
@@ -40,6 +46,13 @@ public interface TransactionInfrastructureMapper {
      * @param model The finalized transaction domain model resulting from a use case execution.
      * @return The mapped JPA entity to be saved in the transaction history table.
      */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "sender", ignore = true)
+    @Mapping(target = "receiver", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdTraceId", ignore = true)
+    @Mapping(target = "updatedTraceId", ignore = true)
     TransactionRecordEntity toRecordEntity(TransactionRecordModel model);
 
     /**

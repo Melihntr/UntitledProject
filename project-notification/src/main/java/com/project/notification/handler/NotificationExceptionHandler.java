@@ -1,6 +1,6 @@
 package com.project.notification.handler;
 
-import com.project.notification.api.dto.ApiErrorResponse;
+import com.project.notification.infrastructure.api.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;

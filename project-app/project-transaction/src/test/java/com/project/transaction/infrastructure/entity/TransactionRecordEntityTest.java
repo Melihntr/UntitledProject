@@ -1,5 +1,6 @@
 package com.project.transaction.infrastructure.entity;
 
+import com.project.user.infrastructure.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,9 @@ class TransactionRecordEntityTest {
         TransactionRecordEntity entity = new TransactionRecordEntity(
                 "tx-123",
                 "alice",
+                null,
                 "bob",
+                null,
                 42.5,
                 now,
                 "COMPLETED"
@@ -38,6 +41,10 @@ class TransactionRecordEntityTest {
         entity.setId("tx-999");
         entity.setSenderUserId("carol");
         entity.setReceiverUserId("dave");
+        UserEntity sender = new UserEntity();
+        UserEntity receiver = new UserEntity();
+        entity.setSender(sender);
+        entity.setReceiver(receiver);
         entity.setAmount(10.0);
         entity.setTransactionDate(then);
         entity.setStatus("PENDING");
@@ -45,45 +52,17 @@ class TransactionRecordEntityTest {
         assertThat(entity.getId()).isEqualTo("tx-999");
         assertThat(entity.getSenderUserId()).isEqualTo("carol");
         assertThat(entity.getReceiverUserId()).isEqualTo("dave");
+        assertThat(entity.getSender()).isSameAs(sender);
+        assertThat(entity.getReceiver()).isSameAs(receiver);
         assertThat(entity.getAmount()).isEqualTo(10.0);
         assertThat(entity.getTransactionDate()).isEqualTo(then);
         assertThat(entity.getStatus()).isEqualTo("PENDING");
     }
 
     @Test
-    void noArgsConstructor_generatesId() {
+    void noArgsConstructor_leavesIdForPersistenceGeneration() {
         TransactionRecordEntity entity = new TransactionRecordEntity();
 
-        assertThat(entity.getId()).isNotBlank();
-    }
-
-    @Test
-    void assignIdIfMissing_generatesIdWhenIdIsBlank() {
-        TransactionRecordEntity entity = new TransactionRecordEntity();
-        entity.setId(" ");
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isNotBlank();
-    }
-
-    @Test
-    void assignIdIfMissing_generatesIdWhenIdIsNull() {
-        TransactionRecordEntity entity = new TransactionRecordEntity();
-        entity.setId(null);
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isNotBlank();
-    }
-
-    @Test
-    void assignIdIfMissing_keepsExistingId() {
-        TransactionRecordEntity entity = new TransactionRecordEntity();
-        entity.setId("transaction-1");
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isEqualTo("transaction-1");
+        assertThat(entity.getId()).isNull();
     }
 }

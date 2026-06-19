@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class TraceIdFilter extends OncePerRequestFilter {
 
     static final String TRACE_ID_HEADER = "X-Trace-Id";
@@ -26,10 +28,22 @@ public class TraceIdFilter extends OncePerRequestFilter {
 
         MDC.put(TRACE_ID_MDC_KEY, traceId);
         response.setHeader(TRACE_ID_HEADER, traceId);
+        long startedAt = System.nanoTime();
+        log.info("request.received method={} path={}", request.getMethod(), request.getRequestURI());
         try {
             filterChain.doFilter(request, response);
+            log.info("request.completed method={} path={} status={} durationMs={}",
+                    request.getMethod(), request.getRequestURI(), response.getStatus(), elapsedMillis(startedAt));
+        } catch (IOException | ServletException | RuntimeException exception) {
+            log.error("request.failed method={} path={} status={} durationMs={}",
+                    request.getMethod(), request.getRequestURI(), response.getStatus(), elapsedMillis(startedAt), exception);
+            throw exception;
         } finally {
             MDC.remove(TRACE_ID_MDC_KEY);
         }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 }

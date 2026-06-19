@@ -1,5 +1,6 @@
 package com.project.transaction.infrastructure.entity;
 
+import com.project.user.infrastructure.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,7 +12,9 @@ class WalletEntityTest {
         WalletEntity entity = new WalletEntity(
                 "w-123",
                 "user-123",
+                null,
                 150.75,
+                false,
                 3L
         );
 
@@ -19,6 +22,7 @@ class WalletEntityTest {
         assertThat(entity.getId()).isEqualTo("w-123");
         assertThat(entity.getUserId()).isEqualTo("user-123");
         assertThat(entity.getBalance()).isEqualTo(150.75);
+        assertThat(entity.isActive()).isFalse();
         assertThat(entity.getVersion()).isEqualTo(3L);
     }
 
@@ -27,50 +31,24 @@ class WalletEntityTest {
         WalletEntity entity = new WalletEntity();
         entity.setId("w-999");
         entity.setUserId("user-999");
+        UserEntity user = new UserEntity();
+        entity.setUser(user);
         entity.setBalance(10.0);
         entity.setVersion(1L);
 
         assertThat(entity.getId()).isEqualTo("w-999");
         assertThat(entity.getUserId()).isEqualTo("user-999");
+        assertThat(entity.getUser()).isSameAs(user);
         assertThat(entity.getBalance()).isEqualTo(10.0);
         assertThat(entity.getVersion()).isEqualTo(1L);
     }
 
     @Test
-    void noArgsConstructor_generatesIdAndDefaultVersion() {
+    void noArgsConstructor_leavesIdForPersistenceGenerationAndSetsDefaultVersion() {
         WalletEntity entity = new WalletEntity();
 
-        assertThat(entity.getId()).isNotBlank();
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.isActive()).isTrue();
         assertThat(entity.getVersion()).isZero();
-    }
-
-    @Test
-    void assignIdIfMissing_generatesIdWhenIdIsBlank() {
-        WalletEntity entity = new WalletEntity();
-        entity.setId(" ");
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isNotBlank();
-    }
-
-    @Test
-    void assignIdIfMissing_generatesIdWhenIdIsNull() {
-        WalletEntity entity = new WalletEntity();
-        entity.setId(null);
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isNotBlank();
-    }
-
-    @Test
-    void assignIdIfMissing_keepsExistingId() {
-        WalletEntity entity = new WalletEntity();
-        entity.setId("wallet-1");
-
-        entity.assignIdIfMissing();
-
-        assertThat(entity.getId()).isEqualTo("wallet-1");
     }
 }

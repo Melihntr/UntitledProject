@@ -5,6 +5,7 @@ import com.project.transaction.infrastructure.entity.WalletEntity;
 import com.project.transaction.infrastructure.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -28,21 +29,28 @@ public class WalletEventListener {
      */
     @EventListener
     public void onUserCreated(UserCreatedEvent event) {
-        
-        log.info("wallet.provision.request eventType=UserCreatedEvent userId={}", event.userId());
+        String previousTraceId = MDC.get("traceId");
+        MDC.put("traceId", event.traceId());
+        try {
+            log.info("wallet.provision.request eventType=UserCreatedEvent userId={}", event.userId());
 
-        WalletEntity wallet = new WalletEntity();
-        wallet.setUserId(event.userId()); // Extract User ID from the event payload
-        
-        // Initial promotional balance for testing purposes.
-        // Enterprise Note: In production, this value should be externalized to application.yml 
-        // (e.g., using @Value("${app.wallet.initial-balance}")).
-        wallet.setBalance(1500.0); 
+            WalletEntity wallet = new WalletEntity();
+            wallet.setUserId(event.userId());
+            wallet.setBalance(1500.0);
+            WalletEntity savedWallet = walletRepository.save(wallet);
 
-        // Persist the newly provisioned wallet to the database
-        walletRepository.save(wallet);
-        
-        log.info("wallet.provision.success walletId={} userId={} initialBalance={}",
-                wallet.getId(), event.userId(), wallet.getBalance());
+            log.info("wallet.provision.success walletId={} userId={} initialBalance={}",
+                    savedWallet.getId(), event.userId(), savedWallet.getBalance());
+        } finally {
+            restoreTraceId(previousTraceId);
+        }
+    }
+
+    private void restoreTraceId(String previousTraceId) {
+        if (previousTraceId == null) {
+            MDC.remove("traceId");
+        } else {
+            MDC.put("traceId", previousTraceId);
+        }
     }
 }

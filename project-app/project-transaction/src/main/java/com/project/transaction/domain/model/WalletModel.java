@@ -29,6 +29,8 @@ public class WalletModel {
      * is the industry standard for financial systems to prevent floating-point precision loss.
      */
     private Double balance;
+
+    private boolean isActive;
     
     /**
      * Optimistic locking version field carried over from the infrastructure layer (database entity).

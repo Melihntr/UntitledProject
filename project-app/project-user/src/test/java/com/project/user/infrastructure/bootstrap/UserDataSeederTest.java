@@ -1,8 +1,8 @@
 package com.project.user.infrastructure.bootstrap;
 
-import com.project.user.domain.model.UserCreateInput;
+import com.project.user.domain.usecase.UserCreateInput;
 import com.project.user.domain.model.UserModel;
-import com.project.user.domain.usecase.CreateUserHandler;
+import com.project.user.domain.handler.CreateUserHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,10 +29,7 @@ class UserDataSeederTest {
     @Test
     void runCreatesSenderAndReceiverSeedUsers() {
         when(createUserHandler.handle(org.mockito.ArgumentMatchers.any(UserCreateInput.class)))
-                .thenAnswer(invocation -> {
-                    UserCreateInput input = invocation.getArgument(0);
-                    return UserModel.builder().id(input.getId()).username(input.getUsername()).build();
-                });
+                .thenReturn(UserModel.builder().id("generated-id").build());
 
         seeder.run();
 
@@ -40,11 +37,6 @@ class UserDataSeederTest {
         verify(createUserHandler, times(2)).handle(inputCaptor.capture());
         List<UserCreateInput> inputs = inputCaptor.getAllValues();
 
-        assertThat(inputs).extracting(UserCreateInput::getId)
-                .containsExactly(
-                        "11111111-1111-1111-1111-111111111111",
-                        "22222222-2222-2222-2222-222222222222"
-                );
         assertThat(inputs).extracting(UserCreateInput::getUsername)
                 .containsExactly("test_sender", "test_receiver");
     }

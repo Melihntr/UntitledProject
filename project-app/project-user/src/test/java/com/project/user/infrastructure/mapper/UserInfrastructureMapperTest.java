@@ -26,17 +26,27 @@ class UserInfrastructureMapperTest {
         UserEntity entity = mapper.toEntity(model);
         UserModel mappedBack = mapper.toModel(entity);
 
-        assertThat(entity.getId()).isEqualTo("u1");
-        assertThat(entity.isActive()).isTrue();
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.isUserDeleted()).isFalse();
         assertThat(entity.getVersion()).isNull();
-        assertThat(mappedBack.getId()).isEqualTo("u1");
+        assertThat(mappedBack.getId()).isNull();
         assertThat(mappedBack.isActive()).isTrue();
-        assertThat(mappedBack.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(mappedBack.getCreatedAt()).isNull();
     }
 
     @Test
     void nullInputsReturnNull() {
         assertThat(mapper.toEntity(null)).isNull();
         assertThat(mapper.toModel(null)).isNull();
+    }
+
+    @Test
+    void deletedEntityMapsToInactiveDomainModel() {
+        UserEntity entity = new UserEntity();
+        entity.setUserDeleted(true);
+
+        UserModel model = mapper.toModel(entity);
+
+        assertThat(model.isActive()).isFalse();
     }
 }

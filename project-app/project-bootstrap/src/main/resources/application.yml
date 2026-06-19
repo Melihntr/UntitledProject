@@ -21,6 +21,7 @@ spring:
   # JPA ve Hibernate Ayarları
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
     hibernate:
       ddl-auto: update # Uygulama kalkarken tabloları otomatik oluşturur
     show-sql: true     # Arka planda atılan (Join vb.) SQL sorgularını konsolda gösterir

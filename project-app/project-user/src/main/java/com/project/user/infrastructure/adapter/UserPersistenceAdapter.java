@@ -60,7 +60,7 @@ public class UserPersistenceAdapter implements UserPort {
     public List<UserModel> getAllUsers() {
         log.debug("user.persistence.list.request");
         
-        List<UserModel> users = userRepository.findAll().stream()
+        List<UserModel> users = userRepository.findAllByIsUserDeletedFalse().stream()
                 .map(userInfrastructureMapper::toModel)
                 .collect(Collectors.toList());
 
@@ -71,13 +71,14 @@ public class UserPersistenceAdapter implements UserPort {
     @Override
     public boolean deleteUserById(String userId) {
         log.debug("user.persistence.delete.request userId={}", userId);
-        UserEntity user = userRepository.findById(userId).orElse(null);
+        UserEntity user = userRepository.findByIdAndIsUserDeletedFalse(userId).orElse(null);
         if (user == null) {
             log.debug("user.persistence.delete.not-found userId={}", userId);
             return false;
         }
 
-        userRepository.delete(user);
+        user.setUserDeleted(true);
+        userRepository.save(user);
         log.debug("user.persistence.delete.success userId={}", userId);
         return true;
     }
