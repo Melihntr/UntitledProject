@@ -58,7 +58,10 @@ public class TransactionPersistenceAdapter implements TransactionPort {
      */
     @Override
     public WalletModel updateWallet(WalletModel walletModel) {
-        WalletEntity entity = mapper.toWalletEntity(walletModel);
+        WalletEntity entity = walletRepository.findByIdAndIsActiveTrue(walletModel.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user: " + walletModel.getUserId()));
+        entity.setBalance(walletModel.getBalance());
+        entity.setVersion(walletModel.getVersion());
         WalletEntity savedEntity = walletRepository.save(entity);
         return mapper.toWalletModel(savedEntity);
     }

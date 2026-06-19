@@ -21,6 +21,7 @@ class TransactionInfrastructureMapperTest {
                 .id("w-1")
                 .userId("user-1")
                 .balance(123.45)
+                .isActive(true)
                 .version(5L)
                 .build();
 
@@ -30,6 +31,7 @@ class TransactionInfrastructureMapperTest {
         assertThat(entity.getId()).isEqualTo("w-1");
         assertThat(entity.getUserId()).isEqualTo("user-1");
         assertThat(entity.getBalance()).isEqualTo(123.45);
+        assertThat(entity.isActive()).isTrue();
         assertThat(entity.getVersion()).isEqualTo(5L);
     }
 
@@ -39,6 +41,7 @@ class TransactionInfrastructureMapperTest {
         entity.setId("we-2");
         entity.setUserId("user-2");
         entity.setBalance(50.0);
+        entity.setActive(true);
         entity.setVersion(2L);
 
         WalletModel model = mapper.toWalletModel(entity);
@@ -47,6 +50,7 @@ class TransactionInfrastructureMapperTest {
         assertThat(model.getId()).isEqualTo("we-2");
         assertThat(model.getUserId()).isEqualTo("user-2");
         assertThat(model.getBalance()).isEqualTo(50.0);
+        assertThat(model.isActive()).isTrue();
         assertThat(model.getVersion()).isEqualTo(2L);
     }
 

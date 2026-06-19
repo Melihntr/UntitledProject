@@ -80,7 +80,7 @@ class TransactionPersistenceAdapterTest {
     }
 
     @Test
-    void updateWallet_mapsEntity_savesAndReturnsMappedModel() {
+    void updateWallet_updatesExistingActiveWalletWithoutSoftDeletingIt() {
         WalletModel inputModel = WalletModel.builder()
                 .id("w-2")
                 .userId("user-2")
@@ -91,31 +91,57 @@ class TransactionPersistenceAdapterTest {
         WalletEntity entity = new WalletEntity();
         entity.setId("w-2");
         entity.setUserId("user-2");
-        entity.setBalance(50.0);
+        entity.setBalance(40.0);
+        entity.setActive(true);
+        entity.setVersion(0L);
 
         WalletEntity savedEntity = new WalletEntity();
         savedEntity.setId("w-2");
         savedEntity.setUserId("user-2");
         savedEntity.setBalance(50.0);
+        savedEntity.setActive(true);
         savedEntity.setVersion(2L);
 
         WalletModel returnedModel = WalletModel.builder()
                 .id("w-2")
                 .userId("user-2")
                 .balance(50.0)
+                .isActive(true)
                 .version(2L)
                 .build();
 
-        when(mapper.toWalletEntity(inputModel)).thenReturn(entity);
+        when(walletRepository.findByIdAndIsActiveTrue("w-2")).thenReturn(Optional.of(entity));
         when(walletRepository.save(entity)).thenReturn(savedEntity);
         when(mapper.toWalletModel(savedEntity)).thenReturn(returnedModel);
 
         WalletModel result = adapter.updateWallet(inputModel);
 
         assertThat(result).isSameAs(returnedModel);
-        verify(mapper).toWalletEntity(inputModel);
+        assertThat(entity.getBalance()).isEqualTo(50.0);
+        assertThat(entity.isActive()).isTrue();
+        assertThat(entity.getVersion()).isEqualTo(1L);
+        verify(walletRepository).findByIdAndIsActiveTrue("w-2");
         verify(walletRepository).save(entity);
         verify(mapper).toWalletModel(savedEntity);
+    }
+
+    @Test
+    void updateWallet_whenActiveWalletDoesNotExist_throws() {
+        WalletModel inputModel = WalletModel.builder()
+                .id("missing")
+                .userId("user-2")
+                .balance(50.0)
+                .version(1L)
+                .build();
+        when(walletRepository.findByIdAndIsActiveTrue("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adapter.updateWallet(inputModel))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Wallet not found for user: user-2");
+
+        verify(walletRepository).findByIdAndIsActiveTrue("missing");
+        verify(walletRepository, never()).save(any());
+        verifyNoInteractions(mapper);
     }
 
     @Test

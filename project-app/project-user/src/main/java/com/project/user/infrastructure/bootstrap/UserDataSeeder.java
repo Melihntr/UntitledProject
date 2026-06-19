@@ -1,10 +1,12 @@
 package com.project.user.infrastructure.bootstrap;
 
+import com.project.common.infrastructure.tracing.TraceIdProvider;
 import com.project.user.domain.usecase.UserCreateInput;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.handler.CreateUserHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +20,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserDataSeeder implements CommandLineRunner {
 
+    private static final String TRACE_ID_MDC_KEY = "traceId";
+
     private final CreateUserHandler createUserHandler;
+    private final TraceIdProvider traceIdProvider;
 
     /**
      * Executes automatically after the Spring context is fully initialized.
@@ -27,18 +32,25 @@ public class UserDataSeeder implements CommandLineRunner {
      */
     @Override
     public void run(String... args) {
+        String previousTraceId = MDC.get(TRACE_ID_MDC_KEY);
+        String seedTraceId = traceIdProvider.currentTraceIdOrNew();
         log.info("seed.user-data.request");
 
-        UserModel user1 = seedUser(
-                "test_sender",
-                "sender@enterprise.com"
-        );
-        UserModel user2 = seedUser(
-                "test_receiver",
-                "receiver@enterprise.com"
-        );
+        try {
+            UserModel user1 = seedUser(
+                    "test_sender",
+                    "sender@enterprise.com"
+            );
+            UserModel user2 = seedUser(
+                    "test_receiver",
+                    "receiver@enterprise.com"
+            );
 
-        log.info("seed.user-data.success senderUserId={} receiverUserId={}", user1.getId(), user2.getId());
+            log.info("seed.user-data.success traceId={} senderUserId={} receiverUserId={}",
+                    seedTraceId, user1.getId(), user2.getId());
+        } finally {
+            restoreTraceId(previousTraceId);
+        }
     }
 
     private UserModel seedUser(String username, String email) {
@@ -48,5 +60,13 @@ public class UserDataSeeder implements CommandLineRunner {
                 .rawPassword("TestPass123!")
                 .build();
         return createUserHandler.handle(input);
+    }
+
+    private void restoreTraceId(String previousTraceId) {
+        if (previousTraceId == null) {
+            MDC.remove(TRACE_ID_MDC_KEY);
+        } else {
+            MDC.put(TRACE_ID_MDC_KEY, previousTraceId);
+        }
     }
 }

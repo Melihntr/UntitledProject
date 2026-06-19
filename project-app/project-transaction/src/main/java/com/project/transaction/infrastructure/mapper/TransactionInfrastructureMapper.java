@@ -38,6 +38,7 @@ public interface TransactionInfrastructureMapper {
      * @param entity The data object retrieved from the database.
      * @return The domain model ready for business logic execution.
      */
+    @Mapping(target = "isActive", expression = "java(entity.isActive())")
     WalletModel toWalletModel(WalletEntity entity);
 
     /**
