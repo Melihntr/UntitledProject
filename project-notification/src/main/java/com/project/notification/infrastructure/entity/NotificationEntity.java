@@ -1,6 +1,6 @@
 package com.project.notification.infrastructure.entity;
 
-import com.project.notification.audit.AuditableEntity;
+import com.project.notification.infrastructure.audit.AuditableEntity;
 import com.project.notification.domain.model.NotificationStatus;
 import com.project.notification.domain.model.NotificationType;
 import jakarta.persistence.*;

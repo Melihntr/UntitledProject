@@ -1,6 +1,6 @@
 package com.project.user.domain.handler;
 
-import com.project.common.usecase.UseCaseHandler;
+import com.project.common.domain.usecase.UseCaseHandler;
 import com.project.user.domain.usecase.UserCreateInput;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.port.UserEventPublisherPort;

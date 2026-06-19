@@ -1,6 +1,6 @@
 package com.project.user.infrastructure.api.controller;
 
-import com.project.common.model.GenericResponse;
+import com.project.common.infrastructure.model.GenericResponse;
 import com.project.user.infrastructure.api.dto.ActiveTransferUserResponse;
 import com.project.user.infrastructure.api.dto.OrphanWalletResponse;
 import com.project.user.infrastructure.api.dto.UserWalletSummaryResponse;

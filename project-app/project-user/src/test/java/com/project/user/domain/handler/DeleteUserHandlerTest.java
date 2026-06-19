@@ -1,6 +1,6 @@
 package com.project.user.domain.handler;
 
-import com.project.common.exception.ResourceNotFoundException;
+import com.project.common.domain.exception.ResourceNotFoundException;
 import com.project.user.domain.port.UserPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

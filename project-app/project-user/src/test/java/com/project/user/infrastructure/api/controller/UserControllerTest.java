@@ -1,6 +1,6 @@
 package com.project.user.infrastructure.api.controller;
 
-import com.project.common.model.GenericResponse;
+import com.project.common.infrastructure.model.GenericResponse;
 import com.project.user.infrastructure.api.dto.BasicUserResponse;
 import com.project.user.infrastructure.api.dto.CreateUserRequest;
 import com.project.user.infrastructure.api.dto.CreateUserResponse;

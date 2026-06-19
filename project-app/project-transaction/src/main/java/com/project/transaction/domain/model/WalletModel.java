@@ -49,7 +49,7 @@ public class WalletModel {
     public void deductBalance(Double amount) {
         if (this.balance < amount) {
             // Note: If you have imported it into this module, throwing your custom 
-            // com.project.common.exception.BusinessException here is highly recommended.
+            // com.project.common.domain.exception.BusinessException here is highly recommended.
             throw new IllegalArgumentException("Business Rule Violation: Insufficient balance in the wallet.");
         }
         this.balance -= amount;

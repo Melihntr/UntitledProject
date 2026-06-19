@@ -1,6 +1,6 @@
 package com.project.user.infrastructure.entity;
 
-import com.project.common.audit.AuditableEntity;
+import com.project.common.infrastructure.audit.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

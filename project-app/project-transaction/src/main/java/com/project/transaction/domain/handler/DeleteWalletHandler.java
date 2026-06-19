@@ -1,7 +1,7 @@
 package com.project.transaction.domain.handler;
 
-import com.project.common.exception.AccessDeniedException;
-import com.project.common.exception.ResourceNotFoundException;
+import com.project.common.domain.exception.AccessDeniedException;
+import com.project.common.domain.exception.ResourceNotFoundException;
 import com.project.transaction.domain.model.WalletModel;
 import com.project.transaction.domain.port.TransactionPort;
 import com.project.transaction.domain.usecase.DeleteWalletInput;

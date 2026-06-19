@@ -1,6 +1,6 @@
 package com.project.user.domain.handler;
 
-import com.project.common.usecase.UseCaseHandler;
+import com.project.common.domain.usecase.UseCaseHandler;
 import com.project.user.domain.model.ActiveTransferUserModel;
 import com.project.user.domain.port.ReportPort;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.project.user.domain.handler;
 
-import com.project.common.exception.ResourceNotFoundException;
+import com.project.common.domain.exception.ResourceNotFoundException;
 import com.project.user.domain.port.UserPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

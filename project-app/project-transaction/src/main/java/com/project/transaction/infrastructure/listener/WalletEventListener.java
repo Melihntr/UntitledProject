@@ -1,6 +1,6 @@
 package com.project.transaction.infrastructure.listener;
 
-import com.project.common.event.UserCreatedEvent;
+import com.project.common.domain.event.UserCreatedEvent;
 import com.project.transaction.infrastructure.entity.WalletEntity;
 import com.project.transaction.infrastructure.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;

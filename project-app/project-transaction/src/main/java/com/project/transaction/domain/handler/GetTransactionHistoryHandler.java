@@ -1,6 +1,6 @@
 package com.project.transaction.domain.handler;
 
-import com.project.common.usecase.UseCaseHandler;
+import com.project.common.domain.usecase.UseCaseHandler;
 import com.project.transaction.domain.model.TransactionRecordModel;
 import com.project.transaction.domain.port.TransactionPort;
 import com.project.transaction.domain.usecase.HistoryFilterInput;

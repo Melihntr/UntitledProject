@@ -2,7 +2,7 @@ package com.project.transaction.infrastructure.adapter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.common.tracing.TraceIdProvider;
+import com.project.common.infrastructure.tracing.TraceIdProvider;
 import com.project.transaction.domain.exception.NotificationDeliveryException;
 import com.project.transaction.domain.model.NotificationResult;
 import com.project.transaction.domain.port.NotificationPort;

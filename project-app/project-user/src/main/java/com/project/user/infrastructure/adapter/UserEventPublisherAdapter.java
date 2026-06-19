@@ -1,7 +1,7 @@
 package com.project.user.infrastructure.adapter;
 
-import com.project.common.event.UserCreatedEvent;
-import com.project.common.tracing.TraceIdProvider;
+import com.project.common.domain.event.UserCreatedEvent;
+import com.project.common.infrastructure.tracing.TraceIdProvider;
 import com.project.user.domain.port.UserEventPublisherPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;

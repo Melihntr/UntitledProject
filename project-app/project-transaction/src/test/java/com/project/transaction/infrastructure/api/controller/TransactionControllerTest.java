@@ -1,7 +1,7 @@
 package com.project.transaction.infrastructure.api.controller;
 
-import com.project.common.model.GenericResponse;
-import com.project.common.security.CurrentUserProvider;
+import com.project.common.infrastructure.model.GenericResponse;
+import com.project.common.infrastructure.security.CurrentUserProvider;
 import com.project.transaction.infrastructure.api.dto.TransferRequest;
 import com.project.transaction.infrastructure.api.dto.TransferResponse;
 import com.project.transaction.infrastructure.api.mapper.TransactionApiMapper;

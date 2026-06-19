@@ -1,6 +1,6 @@
 package com.project.transaction.domain.handler;
 
-import com.project.common.usecase.UseCaseHandler;
+import com.project.common.domain.usecase.UseCaseHandler;
 import com.project.transaction.domain.exception.NotificationDeliveryException;
 import com.project.transaction.domain.usecase.TransactionInput;
 import com.project.transaction.domain.model.NotificationResult;

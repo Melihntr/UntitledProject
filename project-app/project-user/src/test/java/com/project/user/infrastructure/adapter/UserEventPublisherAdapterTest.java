@@ -1,7 +1,7 @@
 package com.project.user.infrastructure.adapter;
 
-import com.project.common.event.UserCreatedEvent;
-import com.project.common.tracing.TraceIdProvider;
+import com.project.common.domain.event.UserCreatedEvent;
+import com.project.common.infrastructure.tracing.TraceIdProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
