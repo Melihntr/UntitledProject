@@ -1,6 +1,8 @@
 package com.project.user.infrastructure.api.controller;
 
+import com.project.common.domain.exception.AccessDeniedException;
 import com.project.common.infrastructure.model.GenericResponse;
+import com.project.common.infrastructure.security.CurrentUserProvider;
 import com.project.user.infrastructure.api.dto.BasicUserResponse;
 import com.project.user.infrastructure.api.dto.CreateUserRequest;
 import com.project.user.infrastructure.api.dto.CreateUserResponse;
@@ -20,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +40,9 @@ class UserControllerTest {
 
     @Mock
     private UserApiMapper userApiMapper;
+
+    @Mock
+    private CurrentUserProvider currentUserProvider;
 
     @InjectMocks
     private UserController controller;
@@ -83,6 +89,8 @@ class UserControllerTest {
 
     @Test
     void deleteUser_delegatesAndReturnsGenericSuccessResponse() {
+        when(currentUserProvider.getUserId()).thenReturn("u1");
+
         ResponseEntity<GenericResponse<Void>> result = controller.deleteUser("u1");
 
         assertThat(result.getStatusCode().value()).isEqualTo(200);
@@ -91,5 +99,14 @@ class UserControllerTest {
         assertThat(result.getBody().getMessage()).isEqualTo("User deleted successfully.");
         assertThat(result.getBody().getData()).isNull();
         verify(deleteUserHandler).handle("u1");
+    }
+
+    @Test
+    void deleteUser_whenCurrentUserDiffers_throwsAccessDenied() {
+        when(currentUserProvider.getUserId()).thenReturn("u2");
+
+        assertThatThrownBy(() -> controller.deleteUser("u1"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("You can only delete your own user account.");
     }
 }

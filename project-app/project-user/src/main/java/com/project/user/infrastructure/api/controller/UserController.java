@@ -1,6 +1,8 @@
 package com.project.user.infrastructure.api.controller;
 
+import com.project.common.domain.exception.AccessDeniedException;
 import com.project.common.infrastructure.model.GenericResponse;
+import com.project.common.infrastructure.security.CurrentUserProvider;
 import com.project.user.infrastructure.api.dto.BasicUserResponse;
 import com.project.user.infrastructure.api.dto.CreateUserRequest;
 import com.project.user.infrastructure.api.dto.CreateUserResponse;
@@ -31,6 +33,7 @@ public class UserController {
     private final GetBasicUsersHandler getBasicUsersHandler;
     private final DeleteUserHandler deleteUserHandler;
     private final UserApiMapper userApiMapper;
+    private final CurrentUserProvider currentUserProvider;
 
     /**
      * Registers a new user in the system.
@@ -72,6 +75,9 @@ public class UserController {
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<GenericResponse<Void>> deleteUser(@PathVariable String userId) {
+        if (!currentUserProvider.getUserId().equals(userId)) {
+            throw new AccessDeniedException("You can only delete your own user account.");
+        }
         deleteUserHandler.handle(userId);
         return ResponseEntity.ok(GenericResponse.success(null, "User deleted successfully."));
     }

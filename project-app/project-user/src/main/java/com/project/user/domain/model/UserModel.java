@@ -32,6 +32,16 @@ public class UserModel {
     private String email;
 
     /**
+     * Internal credential hash. It is never mapped to API response DTOs.
+     */
+    private String passwordHash;
+
+    /**
+     * Authorization role used by Spring Security to route requests.
+     */
+    private String role;
+
+    /**
      * Indicates whether the user account is currently active and permitted to interact with the system.
      */
     private boolean isActive;

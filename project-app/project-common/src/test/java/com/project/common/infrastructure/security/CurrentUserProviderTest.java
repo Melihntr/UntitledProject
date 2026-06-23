@@ -1,16 +1,15 @@
 package com.project.common.infrastructure.security;
 
 import com.project.common.domain.exception.AccessDeniedException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class CurrentUserProviderTest {
 
@@ -18,44 +17,35 @@ class CurrentUserProviderTest {
 
     @AfterEach
     void cleanup() {
-        RequestContextHolder.resetRequestAttributes();
+        SecurityContextHolder.clearContext();
     }
 
     @Test
-    void getUserIdReturnsRequestAttribute() {
-        HttpServletRequest request = bindRequest();
-        when(request.getAttribute(UserHeaderInterceptor.USER_ID_ATTRIBUTE)).thenReturn("user-1");
+    void getUserIdReturnsAuthenticatedPrincipalUserId() {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                new AuthenticatedUser("user-1", "USER"),
+                null,
+                List.of()
+        ));
 
         assertThat(provider.getUserId()).isEqualTo("user-1");
     }
 
     @Test
-    void getUserIdWithoutRequestThrowsAccessDenied() {
+    void getUserIdWithoutAuthenticationThrowsAccessDenied() {
         assertThatThrownBy(provider::getUserId)
                 .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
-    void getUserIdWithoutValidAttributeThrowsAccessDenied() {
-        HttpServletRequest request = bindRequest();
-        when(request.getAttribute(UserHeaderInterceptor.USER_ID_ATTRIBUTE)).thenReturn(" ");
+    void getUserIdWithoutAuthenticatedUserPrincipalThrowsAccessDenied() {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "user-1",
+                null,
+                List.of()
+        ));
 
         assertThatThrownBy(provider::getUserId)
                 .isInstanceOf(AccessDeniedException.class);
-    }
-
-    @Test
-    void getUserIdWithoutStringAttributeThrowsAccessDenied() {
-        HttpServletRequest request = bindRequest();
-        when(request.getAttribute(UserHeaderInterceptor.USER_ID_ATTRIBUTE)).thenReturn(42);
-
-        assertThatThrownBy(provider::getUserId)
-                .isInstanceOf(AccessDeniedException.class);
-    }
-
-    private HttpServletRequest bindRequest() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
-        return request;
     }
 }

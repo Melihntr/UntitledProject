@@ -2,6 +2,7 @@ package com.project.user.domain.handler;
 
 import com.project.user.domain.usecase.UserCreateInput;
 import com.project.user.domain.model.UserModel;
+import com.project.user.domain.port.PasswordHasherPort;
 import com.project.user.domain.port.UserEventPublisherPort;
 import com.project.user.domain.port.UserPort;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,9 @@ class CreateUserHandlerTest {
     @Mock
     private UserEventPublisherPort eventPublisherPort;
 
+    @Mock
+    private PasswordHasherPort passwordHasherPort;
+
     @InjectMocks
     private CreateUserHandler handler;
 
@@ -42,6 +46,7 @@ class CreateUserHandlerTest {
                 .isActive(true)
                 .build();
 
+        when(passwordHasherPort.hash("secret")).thenReturn("hashed-secret");
         when(userPort.save(org.mockito.ArgumentMatchers.any(UserModel.class))).thenReturn(savedUser);
 
         UserModel result = handler.handle(input);
@@ -53,6 +58,8 @@ class CreateUserHandlerTest {
         assertThat(userToSave.getId()).isNull();
         assertThat(userToSave.getUsername()).isEqualTo("alice");
         assertThat(userToSave.getEmail()).isEqualTo("alice@example.com");
+        assertThat(userToSave.getPasswordHash()).isEqualTo("hashed-secret");
+        assertThat(userToSave.getRole()).isEqualTo("USER");
         assertThat(userToSave.isActive()).isFalse();
         assertThat(userToSave.getCreatedAt()).isNotNull();
         assertThat(result).isSameAs(savedUser);
@@ -68,6 +75,7 @@ class CreateUserHandlerTest {
                 .build();
 
         UserModel savedUser = UserModel.builder().id("generated-id").username("seed").build();
+        when(passwordHasherPort.hash("secret")).thenReturn("hashed-secret");
         when(userPort.save(org.mockito.ArgumentMatchers.any(UserModel.class))).thenReturn(savedUser);
 
         UserModel result = handler.handle(input);

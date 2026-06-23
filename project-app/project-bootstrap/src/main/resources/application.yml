@@ -32,6 +32,11 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
 
 app:
+  security:
+    jwt:
+      secret: enterprise-banking-local-development-secret-change-me-please
+      access-token-ttl: PT15M
+      refresh-token-ttl: PT8H
   notification:
     base-url: http://localhost:8081
     connect-timeout: 2s

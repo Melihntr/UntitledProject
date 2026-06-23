@@ -10,19 +10,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TransactionRecordEntityTest {
 
     @Test
-    void allArgsConstructor_and_getters_work() {
+    void settersAndGettersIncludeBaseId() {
         LocalDateTime now = LocalDateTime.now();
 
-        TransactionRecordEntity entity = new TransactionRecordEntity(
-                "tx-123",
-                "alice",
-                null,
-                "bob",
-                null,
-                42.5,
-                now,
-                "COMPLETED"
-        );
+        TransactionRecordEntity entity = new TransactionRecordEntity();
+        entity.setId("tx-123");
+        entity.setSenderUserId("alice");
+        entity.setReceiverUserId("bob");
+        entity.setAmount(42.5);
+        entity.setTransactionDate(now);
+        entity.setStatus("COMPLETED");
 
         assertThat(entity).isNotNull();
         assertThat(entity.getId()).isEqualTo("tx-123");

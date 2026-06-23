@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
  * to facilitate easy testing with the H2 in-memory database.
  */
 @Component
+@Order(2)
 @Slf4j
 @RequiredArgsConstructor
 public class UserDataSeeder implements CommandLineRunner {

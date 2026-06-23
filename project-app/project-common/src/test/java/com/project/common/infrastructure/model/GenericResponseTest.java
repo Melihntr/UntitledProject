@@ -46,6 +46,7 @@ class GenericResponseTest {
         GenericResponse<String> noArgs = new GenericResponse<>();
 
         assertThat(built.getData()).isEqualTo("data");
+        assertThat(GenericResponse.builder().toString()).contains("GenericResponseBuilder");
         assertThat(allArgs.isSuccess()).isFalse();
         assertThat(allArgs.getMessage()).isEqualTo("no");
         assertThat(noArgs.getData()).isNull();

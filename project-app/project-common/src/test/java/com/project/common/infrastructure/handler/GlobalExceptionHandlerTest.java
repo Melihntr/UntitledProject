@@ -1,7 +1,9 @@
 package com.project.common.infrastructure.handler;
 
 import com.project.common.domain.exception.AccessDeniedException;
+import com.project.common.domain.exception.AuthenticationFailedException;
 import com.project.common.domain.exception.BusinessException;
+import com.project.common.domain.exception.InvalidTokenException;
 import com.project.common.domain.exception.ResourceNotFoundException;
 import com.project.common.infrastructure.model.GenericResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +55,30 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
         assertThat(response.getBody().getMessage()).isEqualTo("Wallet access denied");
+    }
+
+    @Test
+    void handleAuthenticationFailedException_returnsUnauthorized() {
+        MDC.put("traceId", "trace-auth");
+
+        ResponseEntity<GenericResponse<Void>> response =
+                handler.handleAuthenticationFailedException(new AuthenticationFailedException("Invalid username or password."));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Invalid username or password.");
+    }
+
+    @Test
+    void handleInvalidTokenException_returnsUnauthorized() {
+        MDC.put("traceId", "trace-token");
+
+        ResponseEntity<GenericResponse<Void>> response =
+                handler.handleInvalidTokenException(new InvalidTokenException("Token has expired."));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Token has expired.");
     }
 
     @Test

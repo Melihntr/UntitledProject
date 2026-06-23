@@ -1,11 +1,9 @@
 package com.project.common.infrastructure.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Configuration
 @RequiredArgsConstructor
 public class UserHeaderWebConfiguration implements WebMvcConfigurer {
 
@@ -13,7 +11,6 @@ public class UserHeaderWebConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(userHeaderInterceptor)
-                .addPathPatterns("/api/**");
+        // JWT security supersedes the legacy X-User-Id interceptor.
     }
 }

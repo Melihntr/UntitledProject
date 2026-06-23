@@ -14,6 +14,7 @@ class UserEntityTest {
 
         assertThat(entity.getId()).isNull();
         assertThat(entity.isUserDeleted()).isFalse();
+        assertThat(entity.getRole()).isEqualTo("USER");
     }
 
     @Test
@@ -24,6 +25,8 @@ class UserEntityTest {
         entity.setId("user-1");
         entity.setUsername("alice");
         entity.setEmail("alice@example.com");
+        entity.setPasswordHash("hash");
+        entity.setRole("ADMIN");
         entity.setUserDeleted(true);
         entity.setCreatedAt(createdAt);
         entity.setVersion(2L);
@@ -31,6 +34,8 @@ class UserEntityTest {
         assertThat(entity.getId()).isEqualTo("user-1");
         assertThat(entity.getUsername()).isEqualTo("alice");
         assertThat(entity.getEmail()).isEqualTo("alice@example.com");
+        assertThat(entity.getPasswordHash()).isEqualTo("hash");
+        assertThat(entity.getRole()).isEqualTo("ADMIN");
         assertThat(entity.isUserDeleted()).isTrue();
         assertThat(entity.getCreatedAt()).isEqualTo(createdAt);
         assertThat(entity.getVersion()).isEqualTo(2L);

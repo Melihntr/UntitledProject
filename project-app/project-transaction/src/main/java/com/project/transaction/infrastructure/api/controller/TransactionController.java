@@ -51,10 +51,9 @@ public class TransactionController {
      */
     @PostMapping("/transfer")
     public ResponseEntity<GenericResponse<TransferResponse>> executeTransfer(
-            @RequestHeader("X-User-Id") String loggedInUserId,
             @Valid @RequestBody TransferRequest request) {
 
-        accessValidator.validateSender(loggedInUserId, request.getSenderUserId());
+        accessValidator.validateSender(currentUserProvider.getUserId(), request.getSenderUserId());
 
         TransactionInput input = transactionApiMapper.toInput(request);
         TransactionRecordModel result = executeTransferHandler.handle(input);
@@ -103,11 +102,7 @@ public class TransactionController {
      * @return A generic response containing a list of suspicious transaction records.
      */
     @GetMapping("/fraud-report")
-    public ResponseEntity<GenericResponse<List<Object[]>>> getFraudReport(
-            @RequestHeader(value = "X-Role", defaultValue = "USER") String role) {
-
-        accessValidator.validateAdminRole(role);
-
+    public ResponseEntity<GenericResponse<List<Object[]>>> getFraudReport() {
         List<Object[]> suspiciousRecords = suspiciousTransfersHandler.handle();
         return ResponseEntity.ok(GenericResponse.successList(suspiciousRecords));
     }
@@ -120,10 +115,9 @@ public class TransactionController {
      */
     @DeleteMapping("/wallets/{walletId}")
     public ResponseEntity<GenericResponse<Void>> deleteWallet(
-            @RequestHeader("X-User-Id") String loggedInUserId,
             @PathVariable String walletId) {
 
-        deleteWalletHandler.handle(new DeleteWalletInput(walletId, loggedInUserId));
+        deleteWalletHandler.handle(new DeleteWalletInput(walletId, currentUserProvider.getUserId()));
         return ResponseEntity.ok(GenericResponse.success(null, "Wallet deleted successfully."));
     }
 }

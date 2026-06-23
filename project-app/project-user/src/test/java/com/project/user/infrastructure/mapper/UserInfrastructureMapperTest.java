@@ -19,6 +19,8 @@ class UserInfrastructureMapperTest {
                 .id("u1")
                 .username("alice")
                 .email("alice@example.com")
+                .passwordHash("hash")
+                .role("USER")
                 .isActive(true)
                 .createdAt(createdAt)
                 .build();
@@ -27,6 +29,8 @@ class UserInfrastructureMapperTest {
         UserModel mappedBack = mapper.toModel(entity);
 
         assertThat(entity.getId()).isNull();
+        assertThat(entity.getPasswordHash()).isEqualTo("hash");
+        assertThat(entity.getRole()).isEqualTo("USER");
         assertThat(entity.isUserDeleted()).isFalse();
         assertThat(entity.getVersion()).isNull();
         assertThat(mappedBack.getId()).isNull();

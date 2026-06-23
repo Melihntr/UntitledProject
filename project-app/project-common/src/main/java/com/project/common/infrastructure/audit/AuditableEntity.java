@@ -1,5 +1,6 @@
 package com.project.common.infrastructure.audit;
 
+import com.project.common.infrastructure.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @Getter
 @Setter
-public abstract class AuditableEntity {
+public abstract class AuditableEntity extends BaseEntity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

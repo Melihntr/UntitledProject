@@ -4,6 +4,7 @@ import com.project.common.domain.usecase.UseCaseHandler;
 import com.project.user.domain.usecase.UserCreateInput;
 import com.project.user.domain.model.UserModel;
 import com.project.user.domain.port.UserEventPublisherPort;
+import com.project.user.domain.port.PasswordHasherPort;
 import com.project.user.domain.port.UserPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class CreateUserHandler implements UseCaseHandler<UserModel, UserCreateIn
 
     private final UserPort userPort;
     private final UserEventPublisherPort eventPublisherPort;
+    private final PasswordHasherPort passwordHasherPort;
 
     /**
      * Executes the user registration business logic.
@@ -38,6 +40,8 @@ public class CreateUserHandler implements UseCaseHandler<UserModel, UserCreateIn
         UserModel newUser = UserModel.builder()
                 .username(input.getUsername())
                 .email(input.getEmail())
+                .passwordHash(passwordHasherPort.hash(input.getRawPassword()))
+                .role("USER")
                 .createdAt(LocalDateTime.now())
                 .build();
 

@@ -1,24 +1,18 @@
 package com.project.common.infrastructure.security;
 
 import com.project.common.domain.exception.AccessDeniedException;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
 public class CurrentUserProvider {
 
     public String getUserId() {
-        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser user)) {
             throw new AccessDeniedException("Current request user is not available.");
         }
-
-        HttpServletRequest request = attributes.getRequest();
-        Object userId = request.getAttribute(UserHeaderInterceptor.USER_ID_ATTRIBUTE);
-        if (!(userId instanceof String value) || value.isBlank()) {
-            throw new AccessDeniedException("Current request user is not available.");
-        }
-        return value;
+        return user.userId();
     }
 }

@@ -18,11 +18,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class NotificationEntity extends AuditableEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private String id;
-
     @Column(name = "event_id", nullable = false, unique = true, updatable = false)
     private String eventId;
 
@@ -69,7 +64,7 @@ public class NotificationEntity extends AuditableEntity {
             String currency,
             NotificationStatus status,
             LocalDateTime createdAt) {
-        this.id = id;
+        setId(id);
         this.eventId = eventId;
         this.type = type;
         this.sourceService = sourceService;

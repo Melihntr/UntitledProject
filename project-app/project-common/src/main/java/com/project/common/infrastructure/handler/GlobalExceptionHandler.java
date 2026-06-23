@@ -1,7 +1,9 @@
 package com.project.common.infrastructure.handler;
 
 import com.project.common.domain.exception.AccessDeniedException;
+import com.project.common.domain.exception.AuthenticationFailedException;
 import com.project.common.domain.exception.BusinessException;
+import com.project.common.domain.exception.InvalidTokenException;
 import com.project.common.domain.exception.ResourceNotFoundException;
 import com.project.common.infrastructure.model.GenericResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,26 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
+                .body(GenericResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<GenericResponse<Void>> handleAuthenticationFailedException(AuthenticationFailedException ex) {
+        String traceId = MDC.get("traceId");
+        log.warn("request.authentication-failed traceId={} message={}", traceId, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(GenericResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<GenericResponse<Void>> handleInvalidTokenException(InvalidTokenException ex) {
+        String traceId = MDC.get("traceId");
+        log.warn("request.invalid-token traceId={} message={}", traceId, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
                 .body(GenericResponse.error(ex.getMessage()));
     }
 

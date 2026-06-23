@@ -75,9 +75,9 @@ class TransactionControllerTest {
         req.setSenderUserId("alice");
         req.setReceiverUserId("bob");
         req.setAmount(10.0);
+        when(currentUserProvider.getUserId()).thenReturn("mallory");
 
-        // logged in user is different
-        assertThatThrownBy(() -> controller.executeTransfer("mallory", req))
+        assertThatThrownBy(() -> controller.executeTransfer(req))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("You can only transfer money from your own wallet");
 
@@ -113,11 +113,12 @@ class TransactionControllerTest {
                 .transactionDate(record.getTransactionDate())
                 .build();
 
+        when(currentUserProvider.getUserId()).thenReturn("alice");
         when(transactionApiMapper.toInput(req)).thenReturn(input);
         when(executeTransferHandler.handle(input)).thenReturn(record);
         when(transactionApiMapper.toResponse(record)).thenReturn(responseDto);
 
-        ResponseEntity<GenericResponse<TransferResponse>> resp = controller.executeTransfer("alice", req);
+        ResponseEntity<GenericResponse<TransferResponse>> resp = controller.executeTransfer(req);
 
         assertThat(resp).isNotNull();
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
@@ -197,20 +198,11 @@ class TransactionControllerTest {
     }
 
     @Test
-    void getFraudReport_whenNonAdmin_throwsSecurityException() {
-        assertThatThrownBy(() -> controller.getFraudReport("USER"))
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Only administrators can access");
-
-        verifyNoInteractions(suspiciousTransfersHandler);
-    }
-
-    @Test
     void getFraudReport_whenAdmin_returnsSuspiciousRecords() {
         List<Object[]> suspicious = List.of(new Object[]{"a", 1}, new Object[]{"b", 2});
         when(suspiciousTransfersHandler.handle()).thenReturn(suspicious);
 
-        ResponseEntity<GenericResponse<List<Object[]>>> resp = controller.getFraudReport("ADMIN");
+        ResponseEntity<GenericResponse<List<Object[]>>> resp = controller.getFraudReport();
 
         assertThat(resp).isNotNull();
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
@@ -225,7 +217,7 @@ class TransactionControllerTest {
     void getFraudReport_whenHandlerReturnsNull_returnsEmptyDataList() {
         when(suspiciousTransfersHandler.handle()).thenReturn(null);
 
-        ResponseEntity<GenericResponse<List<Object[]>>> response = controller.getFraudReport("ADMIN");
+        ResponseEntity<GenericResponse<List<Object[]>>> response = controller.getFraudReport();
 
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getData()).isEmpty();
@@ -233,7 +225,9 @@ class TransactionControllerTest {
 
     @Test
     void deleteWallet_whenOwner_delegatesAndReturnsGenericSuccessResponse() {
-        ResponseEntity<GenericResponse<Void>> response = controller.deleteWallet("alice", "wallet-1");
+        when(currentUserProvider.getUserId()).thenReturn("alice");
+
+        ResponseEntity<GenericResponse<Void>> response = controller.deleteWallet("wallet-1");
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isNotNull();

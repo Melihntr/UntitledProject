@@ -8,15 +8,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class WalletEntityTest {
 
     @Test
-    void allArgsConstructor_and_getters_work() {
-        WalletEntity entity = new WalletEntity(
-                "w-123",
-                "user-123",
-                null,
-                150.75,
-                false,
-                3L
-        );
+    void settersAndGettersIncludeBaseId() {
+        WalletEntity entity = new WalletEntity();
+        entity.setId("w-123");
+        entity.setUserId("user-123");
+        entity.setBalance(150.75);
+        entity.setActive(false);
+        entity.setVersion(3L);
 
         assertThat(entity).isNotNull();
         assertThat(entity.getId()).isEqualTo("w-123");
