@@ -280,7 +280,7 @@ sequenceDiagram
     participant NotificationApp
     participant NotificationDb
 
-    Client->>RequestPipeline: X-User-Id + transfer request
+    Client->>RequestPipeline: Bearer access token + transfer request
     RequestPipeline->>TransactionController: traced request
     TransactionController->>TransferHandler: execute(request)
     TransferHandler->>TransactionPort: load wallets
@@ -296,8 +296,8 @@ sequenceDiagram
 
 Transfer sırasında:
 
-1. `X-User-Id` header'ı kontrol edilir.
-2. Header'daki kullanıcı ile gönderen kullanıcının aynı olması doğrulanır.
+1. `Authorization: Bearer <accessToken>` header'ı `JwtAuthenticationFilter` tarafından doğrulanır.
+2. Token içindeki kullanıcı kimliği ile gönderen kullanıcının aynı olması doğrulanır.
 3. Gönderen ve alıcı cüzdanları yüklenir.
 4. Bakiye ve transfer kuralları kontrol edilir.
 5. Bakiyeler güncellenir ve işlem kaydı `COMPLETED` olarak saklanır.
@@ -310,24 +310,134 @@ Transfer sırasında:
 
 Varsayılan adres: `http://localhost:8080`
 
-| Metot | Endpoint | Açıklama | Gerekli Header |
+Ortak request header yaklaşımı:
+
+```http
+Accept: application/json
+Content-Type: application/json
+X-Trace-Id: optional-client-trace-id
+Authorization: Bearer <accessToken>
+```
+
+`Authorization` header'ı public endpointlerde kullanılmaz. `X-Trace-Id` opsiyoneldir; verilmezse uygulama yeni trace ID üretir. User yetkili endpointler `ROLE_USER`, admin endpointler `ROLE_ADMIN` ister. Admin token'ı user endpointlerine, user token'ı admin endpointlerine giremez.
+
+| Metot | Endpoint | Auth | Açıklama |
 |---|---|---|---|
-| `POST` | `/api/v1/users` | Kullanıcı oluşturur | - |
-| `GET` | `/api/v1/users/basic-list` | Temel kullanıcı listesini döner | `X-User-Id` |
-| `GET` | `/api/v1/admin/reports/user-wallet-summary` | Kullanıcı-cüzdan özetini döner | `X-User-Id` |
-| `GET` | `/api/v1/admin/reports/active-transfers` | Aktif transfer raporunu döner | `X-User-Id` |
-| `GET` | `/api/v1/admin/reports/health/orphan-wallets` | Sahipsiz cüzdanları döner | `X-User-Id` |
-| `POST` | `/api/v1/transactions/transfer` | Para transferi yapar | `X-User-Id` |
-| `GET` | `/api/v1/transactions/history` | Kullanıcının işlem geçmişini döner | `X-User-Id` |
-| `GET` | `/api/v1/transactions/fraud-report` | Şüpheli transfer raporunu döner | `X-User-Id`, `X-Role: ADMIN` |
-| `DELETE` | `/api/v1/users/{userId}` | Yalnızca kullanıcı kaydını pasifleştirir; bulunamazsa `404` döner | - |
-| `DELETE` | `/api/v1/transactions/wallets/{walletId}` | Wallet ID ile yalnızca ilgili cüzdanı pasifleştirir; sahiplik kontrolü yapar | `X-User-Id` |
+| `POST` | `/api/v1/auth/login` | Public | Kullanıcı adı ve şifre ile access/refresh token üretir |
+| `POST` | `/api/v1/auth/refresh` | Public | Geçerli refresh token ile yeni token çifti üretir |
+| `POST` | `/api/v1/auth/logout` | Authenticated | Access token'ı blacklist'e alır, refresh token'ı revoke eder |
+| `POST` | `/api/v1/users` | Public | Kullanıcı oluşturur |
+| `GET` | `/api/v1/users/basic-list` | `ROLE_USER` | Temel kullanıcı listesini döner |
+| `DELETE` | `/api/v1/users/{userId}` | `ROLE_USER` | Yalnızca oturumdaki kullanıcı kendi kaydını soft delete yapabilir |
+| `GET` | `/api/v1/admin/reports/user-wallet-summary` | `ROLE_ADMIN` | Kullanıcı-cüzdan özetini döner |
+| `GET` | `/api/v1/admin/reports/active-transfers` | `ROLE_ADMIN` | Aktif transfer raporunu döner |
+| `GET` | `/api/v1/admin/reports/health/orphan-wallets` | `ROLE_ADMIN` | Sahipsiz cüzdanları döner |
+| `POST` | `/api/v1/transactions/transfer` | `ROLE_USER` | Para transferi yapar |
+| `GET` | `/api/v1/transactions/history` | `ROLE_USER` | Kullanıcının işlem geçmişini sayfalı döner |
+| `GET` | `/api/v1/transactions/fraud-report` | `ROLE_ADMIN` | Şüpheli transfer raporunu döner |
+| `DELETE` | `/api/v1/transactions/wallets/{walletId}` | `ROLE_USER` | Wallet ID ile yalnızca ilgili cüzdanı soft delete yapar |
+
+Standart Enterprise App başarılı cevap formatı:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {}
+}
+```
+
+Standart Enterprise App hata cevap formatı:
+
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "data": null
+}
+```
+
+#### Login
+
+```http
+POST /api/v1/auth/login HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Content-Type: application/json
+X-Trace-Id: demo-login-trace
+
+{
+  "username": "test_sender",
+  "password": "password123"
+}
+```
+
+Örnek cevap:
+
+```json
+{
+  "success": true,
+  "message": "Login completed successfully.",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresInSeconds": 900,
+    "userId": "user-uuid",
+    "role": "USER"
+  }
+}
+```
+
+Varsayılan admin seed bilgisi:
+
+```text
+username: admin
+password: AdminPass123!
+role: ADMIN
+```
+
+#### Refresh Token
+
+```http
+POST /api/v1/auth/refresh HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Content-Type: application/json
+X-Trace-Id: demo-refresh-trace
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+Başarılı refresh işleminde eski refresh token revoke edilir ve yeni access/refresh token çifti döner.
+
+#### Logout
+
+```http
+POST /api/v1/auth/logout HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer <accessToken>
+X-Trace-Id: demo-logout-trace
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+`refreshToken` body içinde opsiyoneldir. Access token varsa blacklist'e alınır; refresh token verilirse refresh session revoke edilir.
 
 #### Kullanıcı Oluşturma
 
 ```http
-POST /api/v1/users
+POST /api/v1/users HTTP/1.1
+Host: localhost:8080
+Accept: application/json
 Content-Type: application/json
+X-Trace-Id: demo-create-user-trace
 
 {
   "username": "demo-user",
@@ -342,13 +452,124 @@ Doğrulama kuralları:
 - `email`: geçerli e-posta formatı
 - `password`: en az 8 karakter
 
+#### Temel Kullanıcı Listesi
+
+```http
+GET /api/v1/users/basic-list HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <userAccessToken>
+X-Trace-Id: demo-basic-list-trace
+```
+
+Örnek `data`:
+
+```json
+[
+  {
+    "id": "user-uuid",
+    "username": "test_sender"
+  }
+]
+```
+
+#### Kullanıcı Silme
+
+```http
+DELETE /api/v1/users/user-uuid HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <userAccessToken>
+X-Trace-Id: demo-delete-user-trace
+```
+
+Token içindeki kullanıcı yalnızca kendi `userId` değerini silebilir. İşlem fiziksel delete değildir; `is_user_deleted=true` yapılır.
+
+Başarılı cevap:
+
+```json
+{
+  "success": true,
+  "message": "User deleted successfully.",
+  "data": null
+}
+```
+
+#### Admin Kullanıcı-Cüzdan Özeti
+
+```http
+GET /api/v1/admin/reports/user-wallet-summary HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <adminAccessToken>
+X-Trace-Id: demo-summary-trace
+```
+
+Örnek `data`:
+
+```json
+[
+  {
+    "username": "test_sender",
+    "email": "sender@example.com",
+    "balance": 1500.00
+  }
+]
+```
+
+#### Admin Aktif Transfer Raporu
+
+```http
+GET /api/v1/admin/reports/active-transfers HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <adminAccessToken>
+X-Trace-Id: demo-active-transfer-trace
+```
+
+Örnek `data`:
+
+```json
+[
+  {
+    "username": "test_sender",
+    "amount": 25.00,
+    "createdAt": "2026-06-24T10:15:30"
+  }
+]
+```
+
+#### Admin Sahipsiz Cüzdan Sağlık Kontrolü
+
+```http
+GET /api/v1/admin/reports/health/orphan-wallets HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <adminAccessToken>
+X-Trace-Id: demo-orphan-wallet-trace
+```
+
+Örnek `data`:
+
+```json
+[
+  {
+    "walletId": "wallet-uuid",
+    "balance": 1500.00,
+    "supposedUserId": "missing-user-id"
+  }
+]
+```
+
 #### Transfer
 
 ```http
-POST /api/v1/transactions/transfer
+POST /api/v1/transactions/transfer HTTP/1.1
+Host: localhost:8080
+Accept: application/json
 Content-Type: application/json
-X-User-Id: sender-user-id
-X-Trace-Id: optional-client-trace-id
+Authorization: Bearer <userAccessToken>
+X-Trace-Id: demo-transfer-trace
 
 {
   "senderUserId": "sender-user-id",
@@ -359,28 +580,95 @@ X-Trace-Id: optional-client-trace-id
 
 `amount` değeri en az `0.01` olmalıdır.
 
-#### İşlem Geçmişi
+Token içindeki `userId`, `senderUserId` ile aynı olmalıdır. Aksi halde `403 Forbidden` döner.
 
-```http
-GET /api/v1/transactions/history?userId=user-id&startDate=2026-01-01T00:00:00&endDate=2026-12-31T23:59:59&page=0&size=20
-X-User-Id: user-id
-```
-
-Header'daki kullanıcı yalnızca kendi işlem geçmişini görüntüleyebilir.
-
-İşlem geçmişi pagination sorgusu `TransactionRecordSpecifications.historyForUser(...)` ile JPA Criteria API üzerinden oluşturulur. Repository, `JpaSpecificationExecutor` kullanarak Criteria filtresi ile `Pageable` bilgisini birlikte uygular.
-
-#### User ve Wallet Silme Cevapları
-
-Başarılı silme işlemleri HTTP `200 OK` ve standart başarılı cevap döner:
+Örnek cevap:
 
 ```json
 {
   "success": true,
-  "message": "User deleted successfully.",
-  "data": null
+  "message": "Operation completed successfully",
+  "data": {
+    "transactionId": "transaction-uuid",
+    "status": "COMPLETED",
+    "amount": 25.0,
+    "transactionDate": "2026-06-24T10:15:30"
+  }
 }
 ```
+
+#### İşlem Geçmişi
+
+```http
+GET /api/v1/transactions/history?userId=user-id&startDate=2026-01-01T00:00:00&endDate=2026-12-31T23:59:59&page=0&size=20 HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <userAccessToken>
+X-Trace-Id: demo-history-trace
+```
+
+Token içindeki kullanıcı yalnızca kendi işlem geçmişini görüntüleyebilir.
+
+İşlem geçmişi pagination sorgusu `TransactionRecordSpecifications.historyForUser(...)` ile JPA Criteria API üzerinden oluşturulur. Repository, `JpaSpecificationExecutor` kullanarak Criteria filtresi ile `Pageable` bilgisini birlikte uygular.
+
+Örnek cevap `data` alanı Spring `Page` yapısıdır:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {
+    "content": [
+      {
+        "transactionId": "transaction-uuid",
+        "status": "COMPLETED",
+        "amount": 25.0,
+        "transactionDate": "2026-06-24T10:15:30"
+      }
+    ],
+    "pageable": {},
+    "totalElements": 1,
+    "totalPages": 1,
+    "last": true,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+#### Admin Fraud Report
+
+```http
+GET /api/v1/transactions/fraud-report HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <adminAccessToken>
+X-Trace-Id: demo-fraud-trace
+```
+
+Şüpheli kayıt yoksa veya persistence katmanı beklenmedik biçimde `null` döndürürse `data` alanı `null` değil `[]` olur.
+
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": []
+}
+```
+
+#### Wallet Silme
+
+```http
+DELETE /api/v1/transactions/wallets/wallet-uuid HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+Authorization: Bearer <userAccessToken>
+X-Trace-Id: demo-delete-wallet-trace
+```
+
+Path parametresi user ID değil wallet ID'dir. Wallet mevcut olsa bile token içindeki kullanıcı wallet sahibine ait değilse HTTP `403 Forbidden` ve başarısız `GenericResponse` döner. Sahiplik kontrolü controller yerine `DeleteWalletHandler` içinde uygulanır.
+
+Her iki delete endpoint'i de soft delete uygular. Kayıtlar fiziksel olarak silinmez. Kullanıcı ancak `is_user_deleted=true` olduğunda silinmiş kabul edilir; alanın entity varsayılanı `false` değeridir. Cüzdan için varsayılanı `true` olan `is_active` alanı silmede `false` yapılır. Repository metotları Spring Data derived query isimleriyle silinmemiş kullanıcıları ve aktif cüzdanları döndürür.
 
 İlgili user veya wallet bulunamadığında HTTP `404 Not Found` ve standart başarısız cevap döner:
 
@@ -392,26 +680,35 @@ Başarılı silme işlemleri HTTP `200 OK` ve standart başarılı cevap döner:
 }
 ```
 
-Wallet silme isteğinde path parametresi wallet ID'dir:
-
-```http
-DELETE /api/v1/transactions/wallets/wallet-id
-X-User-Id: wallet-owner-user-id
-```
-
-Wallet mevcut olsa bile `X-User-Id` wallet sahibine ait değilse HTTP `403 Forbidden` ve başarısız `GenericResponse` döner. Sahiplik kontrolü controller yerine `DeleteWalletHandler` içinde uygulanır.
-
-Her iki delete endpoint'i de soft delete uygular. Kayıtlar fiziksel olarak silinmez. Kullanıcı ancak `is_user_deleted=true` olduğunda silinmiş kabul edilir; alanın entity varsayılanı `false` değeridir. Cüzdan için varsayılanı `true` olan `is_active` alanı silmede `false` yapılır. Repository metotları Spring Data derived query isimleriyle silinmemiş kullanıcıları ve aktif cüzdanları döndürür.
-
-Fraud report sorgusunda şüpheli kayıt bulunmaması veya persistence katmanının beklenmedik biçimde `null` döndürmesi halinde başarılı `GenericResponse` içindeki `data` alanı `null` yerine `[]` olur.
-
 ### Notification App
 
 Varsayılan adres: `http://localhost:8081`
 
-| Metot | Endpoint | Açıklama |
-|---|---|---|
-| `POST` | `/api/v1/notifications` | Bildirimi idempotent biçimde kaydeder |
+| Metot | Endpoint | Auth | Açıklama |
+|---|---|---|---|
+| `POST` | `/api/v1/notifications` | Yok | Bildirimi idempotent biçimde kaydeder |
+
+Örnek direct request:
+
+```http
+POST /api/v1/notifications HTTP/1.1
+Host: localhost:8081
+Accept: application/json
+Content-Type: application/json
+X-Trace-Id: demo-notification-trace
+
+{
+  "eventId": "transaction-uuid",
+  "type": "TRANSFER_RECEIVED",
+  "sourceService": "enterprise-app",
+  "recipientId": "receiver-user-id",
+  "title": "Transfer received",
+  "message": "You received a transfer of 25.0 TRY.",
+  "referenceId": "transaction-uuid",
+  "amount": 25.0,
+  "currency": "TRY"
+}
+```
 
 Yeni kayıt için HTTP `201 Created`, daha önce işlenmiş aynı `eventId` için HTTP `200 OK` döner.
 
@@ -423,10 +720,10 @@ Enterprise App ile Notification App arasındaki iletişim Spring **HTTP Exchange
 @HttpExchange("/api/v1/notifications")
 public interface NotificationHttpExchangeClient {
 
-    @PostExchange
+    @PostExchange(contentType = MediaType.APPLICATION_JSON_VALUE, accept = MediaType.APPLICATION_JSON_VALUE)
     NotificationResponse createNotification(
             @RequestHeader("X-Trace-Id") String traceId,
-            @RequestBody NotificationRequest request);
+            @RequestBody TransferNotificationRequest request);
 }
 ```
 
@@ -590,17 +887,38 @@ Varsayılan bağlantı: `jdbc:h2:mem:notificationdb`
 
 ## Güvenlik
 
-Mevcut güvenlik modeli örnek ve geliştirme amaçlıdır.
+Enterprise App stateless Spring Security kullanır. Oturum bilgisi server session içinde tutulmaz; her korumalı istekte `Authorization: Bearer <accessToken>` header'ı beklenir.
 
-`UserHeaderInterceptor`, `/api/**` altındaki tüm `GET` isteklerinde `X-User-Id` header'ını tek noktadan zorunlu tutar ve değeri request attribute olarak saklar. `CurrentUserProvider`, business erişim kontrolleri için kullanıcı kimliğini yalnızca bu request attribute'tan okur. MDC'ye yazılan `userId` sadece log korelasyonu içindir ve güvenlik bilgisinin kaynağı değildir. `TransactionAccessValidator` ise:
+Güvenlik bileşenleri:
 
-- Transfer göndereninin header kullanıcısıyla aynı olduğunu
-- Kullanıcının yalnızca kendi işlem geçmişine eriştiğini
-- Fraud report isteğinin `X-Role: ADMIN` taşıdığını
+- `SecurityConfiguration`: endpoint bazlı public, `ROLE_USER` ve `ROLE_ADMIN` kurallarını tanımlar.
+- `JwtAuthenticationFilter`: `OncePerRequestFilter` olarak access token'ı doğrular, blacklist kontrolü yapar ve `SecurityContext` oluşturur.
+- `JwtTokenService`: access ve refresh token üretir/doğrular.
+- `RefreshTokenStoreService`: refresh token session bilgisini tutar ve refresh token reuse durumunu engellemek için eski token'ı revoke eder.
+- `TokenBlacklistService`: logout edilen access token ID'lerini expiry zamanına kadar blacklist'te tutar.
+- `JsonAuthenticationEntryPoint` ve `JsonAccessDeniedHandler`: auth hatalarını JSON `GenericResponse` formatıyla döner.
+- `CurrentUserProvider`: business erişim kontrolleri için kullanıcı kimliğini yalnızca `SecurityContext` içindeki principal'dan okur.
 
-doğrular.
+Endpoint rol ayrımı:
 
-Bu yaklaşım gerçek kimlik doğrulama değildir; header değerleri istemci tarafından güvenilir kabul edilir. Production ortamında JWT/OAuth2 tabanlı kimlik doğrulama ve yetkilendirme kullanılmalıdır.
+| Pattern | Kural |
+|---|---|
+| `POST /api/v1/auth/login` | Public |
+| `POST /api/v1/auth/refresh` | Public |
+| `POST /api/v1/users` | Public |
+| `/api/v1/admin/**` | `ROLE_ADMIN` |
+| `/api/v1/transactions/fraud-report` | `ROLE_ADMIN` |
+| `/api/v1/users/**` | `ROLE_USER` |
+| `/api/v1/transactions/**` | `ROLE_USER` |
+| Diğer endpointler | Authenticated |
+
+Bu yapı endpointleri gizlemez; erişim kararı merkezi security filter chain üzerinden verilir. Controller ve servis katmanında rol bilgisi dolaştırılmaz. Servis tarafında yalnızca iş kuralı niteliğindeki sahiplik kontrolleri kalır:
+
+- Transfer göndereninin token kullanıcısıyla aynı olması
+- Kullanıcının yalnızca kendi işlem geçmişine erişmesi
+- Kullanıcının yalnızca kendi user kaydını veya kendi wallet'ını soft delete yapabilmesi
+
+MDC yalnızca log korelasyonu için kullanılır; güvenlik bilgisinin kaynağı değildir. Legacy `X-User-Id` interceptor sınıfı kodda dursa bile web configuration içinde kayıt edilmez.
 
 ## Hata Yönetimi
 
@@ -806,21 +1124,23 @@ Enterprise App cüzdan ve transaction tutarlarında şu anda `Double` kullanır.
 
 ### Kimlik Doğrulama ve Yetkilendirme
 
-Mevcut header tabanlı güvenlik yalnızca örnek amaçlıdır. Önerilen geliştirmeler:
+Mevcut uygulamada Spring Security, access/refresh JWT, role based endpoint ayrımı, logout blacklist ve refresh token revoke mantığı vardır. Production ortamında ek olarak:
 
-- Spring Security
-- OAuth2 Resource Server
-- JWT doğrulama
-- Role ve permission tabanlı yetkilendirme
-- Servisler arası mTLS veya service credential
+- JWT secret/configuration değerleri environment secret yönetimine taşınmalı
+- In-memory blacklist ve refresh token store kalıcı veya dağıtık storage'a alınmalı
+- Token rotation ve reuse detection denetimleri genişletilmeli
+- OAuth2 Resource Server veya merkezi identity provider entegrasyonu değerlendirilmeli
+- Role modeli permission seviyesine indirgenebilecek şekilde genişletilmeli
+- Servisler arası mTLS veya service credential kullanılmalı
 
 ### Şifre Yönetimi
 
-Kullanıcı oluşturma isteğinde password doğrulanır ancak mevcut örnekte bilerek saklanmaz. Gerçek sistemde password:
+Kullanıcı oluşturma isteğinde raw password doğrulanır ve `PasswordHasherPort` üzerinden BCrypt hash olarak saklanır. Production ortamında ek olarak:
 
-- BCrypt veya Argon2 ile hashlenmeli
-- Ayrı credential modeliyle yönetilmeli
-- Düz metin olarak hiçbir zaman loglanmamalı veya saklanmamalıdır
+- Password policy ve breached-password kontrolü eklenmeli
+- Credential modeli kullanıcı profilinden ayrı yönetilmeli
+- Password reset ve account lockout akışları eklenmeli
+- Düz metin password hiçbir zaman loglanmamalı veya saklanmamalıdır
 
 ### Veri Tabanı
 
