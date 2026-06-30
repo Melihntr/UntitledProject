@@ -11,6 +11,7 @@ Kod tabanı; katmanlar arası bağımlılıkları portlar üzerinden sınırland
 
 ## İçindekiler
 
+- [Enterprise Software Design Interview Dokümanı](#enterprise-software-design-interview-dokümanı)
 - [Temel Özellikler](#temel-özellikler)
 - [Mimari Genel Bakış](#mimari-genel-bakış)
 - [Modül Yapısı](#modül-yapısı)
@@ -27,6 +28,14 @@ Kod tabanı; katmanlar arası bağımlılıkları portlar üzerinden sınırland
 - [Yapılandırma](#yapılandırma)
 - [Geliştirme Rehberi](#geliştirme-rehberi)
 - [Mevcut Sınırlar ve Production Yol Haritası](#mevcut-sınırlar-ve-production-yol-haritası)
+
+## Enterprise Software Design Interview Dokümanı
+
+Bu repo için interview formatında hazırlanmış enterprise tasarım dokümanı ayrıca tutulur:
+
+- [Enterprise Banking System - Software Design Interview Case](docs/ENTERPRISE_SOFTWARE_DESIGN.md)
+
+Doküman mevcut modüler monolit yapıyı, enterprise hedef mimariyi, ledger odaklı transfer tasarımını, JWT/RBAC güvenliğini, outbox/event-driven yaklaşımı, deployment görünümünü, ERD ve sequence diyagramlarını içerir.
 
 ## Temel Özellikler
 
